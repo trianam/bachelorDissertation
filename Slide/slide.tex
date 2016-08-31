@@ -1,0 +1,473 @@
+%\documentclass[draft]{beamer}
+\documentclass[dvips, 11pt]{beamer}
+\mode<presentation>{
+  \usetheme{CambridgeUS}
+  \setbeamercovered{transparent}
+}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[italian]{babel}
+%\usepackage[overlay,absolute]{textpos}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{shapes, chains, scopes, shadows, positioning, arrows, decorations.pathmorphing}
+\usepackage{appendixnumberbeamer}
+
+\include{stili}
+
+\title[Analisi e sviluppo di un crawler]{\textbf{\uppercase{Analisi e sviluppo di un crawler per la creazione di una base di conoscenza semantica del personale universitario}}}
+\subtitle{parte del progetto OSIM (\emph{Open Space Innovative Minds})
+  del DISIT (\emph{Distributed Systems and Internet Technology Laboratory}) della facolt\`a di ingegneria}
+\institute[Universit\`a Firenze]{UNIVERSIT\`A DEGLI STUDI DI FIRENZE\\Facolt\`a di Scienze Matematiche, Fisiche e Naturali\\Corso di Laurea in Informatica}
+  %\\ \includegraphics[width=2cm]{img/logo-unifi.eps}
+\author[Stefano Martina]{
+  \textbf{\uppercase{Stefano Martina}}\\
+  Relatore: Elena Barcucci; Corelatore: Paolo Nesi
+}
+
+\date[20 luglio 2012]{Tesi di laurea, 20 luglio 2012}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+%\begin{frame}
+%  \tableofcontents
+  % You might wish to add the option [pausesections]
+%\end{frame}
+
+\section{Analisi del problema}
+
+\subsection{Progetto OSIM}
+
+\begin{frame}{Problematiche}
+  \begin{itemize}
+  \item I sistemi classici di ricerca non sono efficaci per certi ambiti
+    \pause
+  \item \`E necessaria la possibilit\`a di poter ricercare chi ha certe \alert{competenze}
+    \pause
+  \item Le pagine delle persone hanno una struttura \alert{complessa} e non semantica
+    \pause
+  \item \`E necessario fornire un'interfaccia sia per interrogare\\
+    che per amministrare le competenze
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Il progetto}
+  \begin{block}{Schema di OSIM}
+    \begin{center}
+      \includegraphics[height=0.5\textheight]{img/schemaOsim}
+    \end{center}
+  \end{block}
+  \pause
+  \begin{itemize}
+  \item Creare una \alert{base di conoscenza} del personale universitario
+    \pause
+  \item Organizzare le \alert{competenze} in modo \alert{gerarchico}
+    \pause
+  \item Possibilit\`a di effettuare \alert{query}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Problema specifico}
+  \begin{block}{Collaborative SKOS Accelerator and Manager}
+    \include{schema_coskosam}
+  \end{block}
+  \begin{itemize}
+  \item Il lavoro si concentra su \alert{CoSKOSAM}, in particolar modo sul \alert{crawler}
+    \pause
+  \item Il crawler si presentava destrutturato e non funzionante
+    \pause
+  \item Le pagine da acquisire presentano una struttura complessa,\\
+    cos\`i come l'ontologia su cui scrivere
+    \pause
+  \item \`E stato svolto un lavoro di \alert{studio} del progetto
+    \pause
+  \item Sono state implementate \alert{nuove funzionalit\`a}
+  \end{itemize}
+\end{frame}
+
+\subsection{Strutture usate}
+
+\begin{frame}{Strutture usate}
+  \begin{itemize}
+  \item Vengono usate le strutture semantiche \alert{RDF}, \alert{RDFS}, \alert{OWL}\\
+    per la memorizzazione dell'informazioni
+    \pause
+  \item Viene usato il \alert{framework GATE} per l'analisi del linguaggio naturale
+    \pause
+  \item Vengono usate l'ontologia \alert{SKOS} e \alert{FOAF}\\
+    per rappresentare competenze e persone 
+  \end{itemize}
+\end{frame}
+
+\section{Lavoro svolto}
+
+\subsection{Ontologia}
+
+\begin{frame}{Scrittura nell'ontologia}
+  \include{ontologia_istanze}
+\end{frame}
+
+\begin{frame}{Creazione dello SKOS}
+  \begin{columns}
+    \begin{column}{5cm}
+      \include{ontologia_skos}
+    \end{column}
+    \begin{column}{5cm}
+      \begin{itemize}
+        \item Interviene\\
+          l'\alert{esperto di dominio}\\
+          per la creazione\\
+          dello \alert{SKOS}
+          \pause
+        \item La competenza\\
+          pu\`o essere inserita\\
+          come \alert{radice} dello SKOS
+          \pause
+        \item Oppure\\
+          come \alert{specificazione}\\
+          di un'altra competenza
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\subsection{Crawler keyword}
+
+\begin{frame}{Crawler keyword}{Problemi principali}
+  \begin{itemize}
+  \item Reperire tutte le pagine del dipartimento\\
+    seguendo una \alert{struttura complessa}
+    \pause
+  \item \`E necessario del \alert{NLP} per individuare nel testo le \alert{keyword}
+    \pause
+  \item Gestire i casi in cui le keyword siano di \alert{lingue diverse}
+    \pause
+  \item Va gestito il caso in cui l'estrazione delle keyword dia \alert{esiti errati}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Schema crawling keyword}
+  \include{schema_crawl_key}
+\end{frame}
+
+\subsection{Crawler competenze}
+
+\begin{frame}{Crawler competenze}{Problemi principali}
+  \begin{itemize}
+  \item Reperire le pagine di ogni persona
+    \pause
+  \item Individuare le \alert{competenze} associate alle persone
+    \pause
+  \item Reperire la \alert{struttura} (persone, corsi, dipartimenti) dalle pagine
+    \pause
+  \item Scrivere le informazioni nell'\alert{ontologia}
+    \pause
+  \item Va gestito il \alert{multilingua} delle competenze
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Schema crawling competenze}
+  \include{schema_crawl_comp}
+\end{frame}
+
+\subsection{Dettagli progettuali}
+
+\begin{frame}{Servlet}
+  \begin{block}{schema}
+    \include{schema_servlet}
+  \end{block}
+  \pause
+  \begin{itemize}
+    \item Pagine \alert{JSP}
+      \pause
+    \item Chiamate \alert{HTTP} tramite \alert{Javascript} alla \alert{Servlet}
+      \pause
+    \item Creazione \alert{gestore comandi}
+      \pause
+    \item Esecuzione comando
+      \pause
+    \item Risposta \alert{JSON} alla pagina
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Dettagli crawler}
+  \begin{block}{schema}
+    \include{schema_gestore_crawl}
+  \end{block}
+  \pause
+  \begin{itemize}
+    \item Viene usata una \alert{coda di processi}
+      \pause
+    \item Sequenzialmente viene creato un \alert{thread} per ogni processo della coda
+      \pause
+    \item Il thread chiama il giusto \alert{engine} secondo l'operazione richiesta
+      \pause
+  \end{itemize}
+\end{frame}
+
+\section{Conclusioni}
+
+\subsection{Interfaccia}
+
+\begin{frame}{Interfaccia keyword}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \includegraphics[width=\textwidth]{img/pannelloAmministrazione2}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{itemize}
+      \item Interviene un \alert{esperto di dominio}
+        \pause
+      \item Sceglie quali sono le \alert{keyword} significative
+        \pause
+      \item Le keyword scelte sono inserite in un \alert{gazetteer}
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Interfaccia SKOS}
+%  \begin{textblock*}{12.8cm}(0cm,0cm)
+%    \include{evidenzia_pannelloAmministrazione1}
+%  \end{textblock*}
+  \begin{center}
+    \includegraphics[height=0.8\textheight]{img/pannelloAmministrazione1}
+  \end{center}
+  \include{evidenzia_pannelloAmministrazione1}
+\end{frame}
+
+\subsection{Risultati}
+
+\begin{frame}{Risultati}
+  \begin{columns}
+    \begin{column}{0.3\textwidth}
+      Sono stati acquisiti:
+    \end{column}
+    \begin{column}{0.35\textwidth}
+      \begin{itemize}
+      \item  \alert{49} dipartimenti
+      \item  \alert{249000} keyword
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.35\textwidth}
+      \begin{itemize}
+      \item  \alert{13000} documenti
+      \item  \alert{2344} docenti
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \pause
+  \vspace{0.5cm}
+  Stato dei principali dipartimenti per i quali \`e stata fatta la \alert{validazione}:
+  \begin{tabular}{|p{8cm}|r|r|r|}
+    \hline 
+    \textbf{Dipartimento} & \textbf{Key.} & \textbf{Gaz.} & \textbf{Doc.} \\
+    \hline 
+    Dipartimento di meccanica & 2958 & 523 & 92 \\
+    \hline
+    Dipartimento di Anat., Ist. e Medicina Legale & 2012 & 909 & 400\\
+    \hline
+    Dipartimento di Elettronica e Telecomunicazioni & 6660 & 430 & 255\\
+    \hline
+    Dipartimento di Ingegneria Civile e Ambientale & 6502 & 470 & 245\\
+    \hline
+    Dipartimento di Scienze della Terra & 10127 & 143 & 179\\
+    \hline
+    Dipartimento di Teoria e Storia del Diritto & 6574 & 1173 & 43\\
+    \hline
+    Dipartimento di scienze economiche & 5115 & 1047 & 285\\
+    \hline
+    Dipartimento di matematica per le decisioni & 2258 & 232 & 122\\
+    \hline
+    Dipartimento di sistemi ed informatica & 7803 & 1733 & 335\\
+    \hline
+  \end{tabular}
+\end{frame}
+
+\begin{frame}{Conclusioni}
+  \begin{itemize}
+  \item Sono stati studiati ed analizzati il \alert{problema} e le diverse \alert{complessit\`a}
+    \pause
+  \item I problemi principali sono la \alert{struttura delle pagine},\\
+    creare una \alert{ontologia} che possa essere amministrata e interrogata\\
+    e fornire una \alert{interfaccia} usabile
+    \pause
+  \item Sono state formulate e implementate le due fasi di crawling
+    \pause
+  \item Sono stati proposti possibili \alert{sviluppi futuri}, ad esempio
+    \begin{itemize}
+    \item usare \alert{XSLT} per implementare una fase di pre-crawling
+    \item identificare le keyword anche con i \alert{verbi}
+    \item un miglioramento della parte di query sull'ontologia
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\section*{}
+
+\begin{frame}
+  \begin{center}
+    $\mathcal{FINE}$
+  \end{center}
+\end{frame}
+
+\appendix
+
+\section{\appendixname}
+
+\begin{frame}{Rappresentazioni semantiche}{RDF, RDFS, OWL}
+  \begin{itemize}
+  \item \alert{RDF} permette di rappresentare:\\
+    \alert{risorse}, \alert{asserzioni} su di esse e relazioni tra di esse
+    \pause
+    \begin{itemize}
+    \item Le risorse sono identificate univocamente da \alert{URI}
+      \pause
+    \item Le asserzioni sono rappresentate da \alert{triple}:\\
+      \alert{soggetto} - \alert{predicato} - \alert{oggetto}
+      \pause  
+    \end{itemize}
+  \item \alert{RDFS} \`e una estenzione semantica di RDF che fornisce\\
+    un vocabolario per definire \alert{classi} e \alert{propriet\`a}
+    \pause
+    \begin{itemize}
+    \item Le risorse possono essere divise in classi, i membri delle classi\\
+      sono dette \alert{istanze} e vengono definite tramite \texttt{rdf:type}
+      \pause
+    \item \`E possibile definire \alert{sottoclassi} tramite \texttt{rdfs:subClassOf}
+      \pause
+    \item \`E possibile definire \alert{sottopropriet\`a} tramite \texttt{rdfs:subPropertyOf}
+      \pause
+    \item \`E possibile definire un \alert{dominio} di una propriet\`a\\
+      con \texttt{rdfs:domain} e un'\alert{immagine} con \texttt{rdfs:range}
+      \pause
+    \end{itemize}
+  \item \alert{OWL} estende RDFS per creare strutture logiche
+    \pause
+    \begin{itemize}
+    \item Le strutture descritte con OWL si chiamano \alert{ontologie}
+      \pause
+    \item Sulle ontologie \`e possibile estrarre conoscenza con dei \alert{reasoner}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Framework GATE}{General Architecture for Text Engineering}
+  \begin{itemize}
+  \item \`E un framework open source per lo sviluppo di applicazioni\\
+    per l'analisi del linguaggio naturale
+    \pause
+  \item Fornisce un editor di sviluppo \alert{GATE Developer}\\
+    e una API \alert{GATE Embedded}
+    \pause
+  \item Le applicazione sono costituite da \alert{plugin}\\
+    eseguiti in cascata sui documenti
+    \pause
+  \item I plugin creano delle \alert{annotazioni} sui documenti
+    \pause
+  \item I \alert{gazetteer} sono insiemi di liste di parole che vengono annotate
+    \pause
+  \item Le regole \alert{JAPE} permettono di individuare pattern nelle annotazioni\\
+    utilizzando espressioni regolari
+    \pause
+  \item \alert{ANNIE} \`e una pipeline che annota nel testo parole, frasi,\\
+    e parti del testo (sostantivi, verbi, etc\dots)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{RDF}{Resource Description Framework}
+  \begin{itemize}
+  \item Rappresentare \alert{risorse}, \alert{asserzioni} su di esse e relazioni tra di esse
+    \pause
+  \item Le risorse sono identificate univocamente da \alert{URI}
+    \pause
+  \item Le asserzioni sono rappresentate da \alert{triple}
+    \pause
+    \begin{itemize}
+    \item Il \alert{soggetto} deve essere un URI
+      \pause
+    \item Il \alert{predicato} deve essere un URI
+      \pause
+    \item L'\alert{oggetto} pu\`o essere un URI o un letterale
+      \pause
+    \end{itemize}
+  \item Possibilit\`a di usare \alert{blank node} per i soggetti e oggetti
+    \pause
+  \item Possibilit\`a di usare la \alert{reificazione}\\
+    per fare asserzioni su di una asserzione
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{RDFS}{RDF Schema}
+  \begin{itemize}
+  \item Estenzione semantica di RDF che fornisce un vocabolario\\
+    per definire \alert{classi} e \alert{propriet\`a}
+    \pause
+  \item Le risorse possono essere divise in classi, i membri delle classi\\
+    sono dette \alert{istanze} e vengono definite tramite \texttt{rdf:type}
+    \pause
+  \item \`E possibile definire \alert{sottoclassi} tramite \texttt{rdfs:subClassOf}
+    \pause
+  \item Le propriet\`a sono i predicati di RDF
+    \pause
+  \item \`E possibile definire \alert{sottopropriet\`a} tramite \texttt{rdfs:subPropertyOf}
+    \pause
+  \item \`E possibile definire un \alert{dominio} di una propriet\`a\\
+    con \texttt{rdfs:domain} e un'\alert{immagine} con \texttt{rdfs:range}
+    \pause
+  \item Esistono dei vocabolari per definire \alert{contenitori} e \alert{collezioni}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{OWL}{Web Ontology Language}
+  \begin{itemize}
+  \item Estende RDFS per creare strutture logiche
+    \pause
+  \item Le strutture descritte con OWL si chiamano \alert{ontologie}
+    \pause
+  \item Sulle ontologie \`e possibile estrarre conoscenza con dei \alert{reasoner}
+    \pause
+  \item Esistono tre dialetti con livelli di espressivit\`a logica crescenti
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{SKOS}{Simple Knowledge Organization System}
+  \begin{itemize}
+  \item \`E un vocabolario RDF che permette\\
+    la descrizione di sistemi di organizzazione
+    \pause
+  \item L'elemento fondamentale \`e il \alert{concept}\\
+    definito come istanza di \texttt{skos:Concept}
+    \pause
+  \item Si indicano le label con:\\
+    \texttt{skos:prefLabel}, \texttt{skos:altLabel}, \texttt{skos:hiddenLabel}
+    \pause
+  \item Esistono \alert{relazioni semantiche} definite con:\\
+    \texttt{skos:broader}, \texttt{skos:narrower} e \texttt{skos:relate}
+    \pause
+  \item I concept possono essere organizzati in \alert{vocabolari}\\
+    istanze di \texttt{skos:ConceptScheme}\\
+    con la propriet\`a \texttt{skos:inScheme}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{FOAF}{Friend Of A Friend}
+  \begin{itemize}
+  \item \`E un vocabolario per definire una \alert{rete sociale} con RDF
+    \pause
+  \item La persona viene descritta come istanza di \texttt{foaf:Person}
+    \pause
+  \item La propriet\`a \texttt{foaf:name} specifica il nome di una persona
+    \pause
+  \item \texttt{foaf:knows} mette in relazione due persone
+    \pause
+  \item Esistono altre propriet\`a per indicare altri attributi di una persona,\\
+    o per identificare l'appartenenza ad un gruppo
+  \end{itemize}
+\end{frame}
+\end{document}

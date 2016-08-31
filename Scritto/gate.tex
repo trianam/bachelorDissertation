@@ -1,0 +1,254 @@
+\documentclass[tesi.tex]{subfiles}
+\begin{document}
+\chapter{Framework \emph{GATE}}
+La General Architecture for Text Engineering (GATE) \cite{Cunningham2011a}
+è un framework JAVA Open Source per lo sviluppo
+di software per l'analisi del linguaggio naturale. \`E stato creato
+dall'Università di Sheffield a partire dal 1995 ed è attualmente
+aggiornato anche da altre organizzazioni e istituti, quali, ad esempio
+Ontotext, un'azienda bulgara che sviluppa software principalmente
+nell'ambito Semantic Web. Oggi è uno strumento molto utilizzato dalla
+comunità scientifica per la soluzione di vari problemi nell'ambito del
+Natural Language Processing (NLP) quali, ad esempio, l'Information
+Extraction, Information Retrieval, Taxonomy Learning, e così via.
+
+GATE fornisce una serie di plugin che eseguono alcuni tipi di analisi
+sul testo, nonché una API per la creazione di plugin ad hoc. Tali
+plugin possono essere organizzati e utilizzati secondo una pipeline
+specifica per il task da svolgere, permettendo così la massima
+flessibilità.
+
+GATE fornisce anche un'interfaccia grafica, GATE Developer, che
+permette di creare e cambiare agevolmente i componenti di una
+pipeline, garantendo un'ottima configurabilità e possibilità di
+customizzazione.
+GATE fornisce anche una API, GATE Embedded, che permette di creare
+applicazioni stand alone che non necessitano di usare l'intefaccia
+grafica.
+
+\section{Concetti generali}\label{concettigenerali}
+Questo paragrafo descrive quali sono i concetti alla base del
+funzionamento del framework GATE. Ogni applicazione GATE è costituita
+da plugin, chiamati plugin CREOLE, che sono eseguiti in
+cascata. Ciascun plugin aggiunge, rimuove o modifica annotazioni ai
+documenti. I documenti, insieme a queste annotazioni, possono essere
+salvati in un datastore che ne garantisce la persistenza.
+
+\subsection{Collection of REusalble Objects for Language Engineering (CREOLE)}
+L'architettura di GATE è basata su componenti, cioè elementi di
+software riusabile con interfacce ben definite, che possono essere
+installati e utilizzati in contesti molto diversi fra loro. Sono
+implementati tramite una classe Java, che al suo interno può fornire
+accesso a un database, chiamare un eseguibile esterno o semplicemente
+implementare l'intero componente in modo autonomo.
+
+I componenti di GATE possono essere di tre tipi:
+\begin{itemize}
+\item Language Resource (LR): rappresentano le entità quali i corpora, i documenti, le ontologie e così via.
+\item Processing Resource (PR): rappresentano entità principalmente algoritmiche che eseguono operazioni sul testo. Alcuni esempi sono i parser, i tagger e così via.
+\item Visual Resource (VR): sono i componenti che servono per la visualizzazione e l'editing di altre entità nell'interfaccia grafica.
+\end{itemize}
+L'insieme composto da tutti i componenti integrati in GATE è chiamato Collection of REusalble Objects for Language Engineering (CREOLE).
+
+I componenti possono essere organizzati in una pipeline di GATE. GATE
+fornisce vari tipi di pipeline: alcune lavorano su un singolo
+documento, altre a livello di corpus, cioè a gruppi di documenti,
+prendendoli uno alla volta. Si puo condizionare l'esecuzione delle
+pipeline secondo determinate condizioni sulle features del documento o
+interromperla dopo un determinato tempo di timeout.
+
+\subsection{Features e Annotazioni}\label{par:annotation}
+Le features e le annotazioni sono i due elementi utilizzati da GATE
+per associare informazioni aggiuntive ai documenti.
+
+Le features sono coppie nella forma chiave=valore, dove la chiave è
+una stringa, mentre il valore può essere un qualunque oggetto JAVA.
+
+Una \emph{feature map} è una lista di features e può essere associata
+a un documento, oppure a un'annotazione. Ad esempio la \emph{feature
+  map} di un documento contiene informazioni come il nome del file, il
+percorso, il mimetype, e così via.
+
+Le annotazioni sono l'elemento che, nella maggior parte dei casi,
+viene utilizzato dai componenti CREOLE per eseguire le loro
+operazioni. Ciascuna PR, infatti, analizza il testo di un documento
+insieme alle sue annotazioni e, eventualmente, ne aggiunge alcune
+nuove o modifica quelle esistenti.
+
+Le annotazioni hanno una \emph{feature map}, un tipo e un ID
+univoco. Vanno da uno \emph{start node} a un \emph{end node}. Lo
+\emph{start node} e l'\emph{end node} sono punti nel testo e sono
+identificati dal loro offset dall'inizio del documento.
+
+Le annotazioni sono organizzate in \emph{annotation set}, cioè insiemi
+di annotazioni. Un \emph{annotation set} può anche essere visto come
+un grafo direzionato e aciclico di cui ogni annotazione rappresenta un
+arco.
+
+Ogni documento può avere uno o più \emph{annotation set}. Ad esempio
+ogni documento ha sempre un \emph{annotation set} di default, inoltre
+alcuni documenti possono avere un altro \emph{annotation set},
+chiamato \gate{Original Markup} che contiene alcune informazioni estratte
+del documento in fase di caricamento.
+
+\section{Funzioni e Plugins}\label{funzioni}
+In questo paragrafo sono descritte alcune delle funzionalità e dei
+plugin distribuiti insieme a GATE. Nel prossimo paragrafo sono
+descritti i \emph{gazetteer} che permettono di individuare nel testo
+parole o termini composti da più parole appartenenti a liste
+predefinite. Nel paragrafo \ref{par:jape} sono descritte le
+grammatiche JAPE che permettono di individuare dei pattern nelle
+annotazioni dei documenti utilizzando le espressioni regolari. Sulle
+annotazioni individuate tramite il matching basato su espressioni
+regolari è poi possibile effettuare modifiche o aggiunte. Il paragrafo
+\ref{par:annie} descrive la pipeline ANNIE e i suoi componenti. ANNIE
+è una pipeline completa per l'Information Extraction su testi in
+lingua inglese, ma i suoi componenti possono essere riusati anche in
+altre pipeline.
+
+\subsection{Gazetteer}\label{par:gazetteer}
+Un \emph{gazetteer} è una insieme di liste, ciascuna contenente un
+insieme di nomi. Tali insiemi di nomi possono essere ad esempio nomi
+di città, nomi di organizzazioni, giorni della settimana, ecc. I
+\emph{gazetteer} plugin sono usati per individuare nel testo
+occorrenze delle parole appartenenti a queste liste.
+
+In GATE il termine \emph{gazetteer} viene impiegato per indicare sia
+l'insieme di liste, sia i plugin CREOLE che gestiscono le liste e
+individuano le occorrenze nel testo.
+
+GATE mette a disposizione molti plugin di tipo \emph{gazetteer},
+ciascuno dei quali crea, per ogni occorrenza individuata,
+un'annotazione di tipo Lookup.
+
+    \subsection{Java Annotation Patterns Engine}\label{par:jape}
+Java Annotation Patterns Engine (JAPE) è una versione di CPSL (Common Pattern Specification Language)\cite{Appelt:1998:CPS:1119089.1119095} e permette di individuare pattern nelle annotazioni dei documenti utilizzando espressioni regolari. 
+
+Le annotazioni dei documenti rappresentano un grafo, come già spiegato nel paragrafo \ref{par:annotation}. Le espressioni regolari, però, hanno una espressività più limitata e non possono rappresentare i grafi. Questo fa sì che in alcuni casi il matching effettuato con una grammatica JAPE potrebbe essere non prevedibile, dato che, nei casi in cui è necessario un potere espressivo superiore a quello offerto dalla grammatica, JAPE sceglie una delle alternative arbitrariamente.
+
+Questo non è però problematico come potrebbe sembrare, dato che la maggior parte dei dati  in GATE è molto meno complessa di un grafo e può essere modellata come una semplice sequenza di informazioni.
+
+Per l'esecuzione di grammatiche JAPE, GATE mette a disposizione il plugin JAPE Transducer. Una gramamtica JAPE consiste in un insieme di fasi, ciascuna delle quali è composta da una coppia pattern-azione. Le fasi vengono eseguite in cascata una di seguito all'altra.
+
+Ogni fase è costituita da una Left Hand Side (LHS), che è la descrizione del pattern da individuare e da una Right Hand Side (RHS) che contiene istruzioni per manipolare le annotazioni.
+
+Le annotazioni che corrispondono al pattern definito dalla LHS sono manipolate secondo le istruzioni della RHS.
+
+Il codice \ref{cod:esempioJape} mostra una regola di esempio.
+\begin{code}
+\begin{abnfblock}
+Phase: Jobtitle
+Input: Lookup
+Options: control = appelt debug = true
+Rule: Jobtitle1
+(
+	{Lookup.majorType == jobtitle}
+	(
+		{Lookup.majorType == jobtitle}
+	)?
+)
+:jobtitle
+-->
+:jobtitle.JobTitle = {rule = ``JobTitle1''}
+\end{abnfblock}
+\caption{Esempio di regola JAPE}
+\label{cod:esempioJape}
+\end{code}
+Il simbolo \lstinline{-->} separa la la LHS dalla RHS. 
+
+La regola di esempio individua tutte le annotazioni di tipo Lookup con \emph{major type} ``jobtitle'', seguite opzionalmente da un'altra annotazione Lookup con \emph{major type} ``jobtitle''. La RHS annota il testo individuato con un'annotazione di tipo JobTitle che contiene una \emph{feature} ``rule=JobTitle1''.
+
+Il matching nella LHS può essere fatto usando vari tipi di operatori che permettono la massima flessibilità. Fra gli altri è possible usare anche gli operatori di Kleene, operatori di espressioni regolari su stringhe, operatori di confronto, operatori di contesto, che permettono di individuare annotazioni contenute in altre annotazioni, ecc.
+
+Nella RHS le istruzioni possono essere scritte secondo la sintassi JAPE, come nell'esempio precedente, oppure utilizzando codice Java.
+
+\subsection{A Nearly New Information Extraction System}\label{par:annie}
+GATE viene ditribuito insieme a un sistema di Information Extraction,
+chiamato A Nearly New Information Extraction System (ANNIE)
+\cite{Cunningham2002} sviluppato principalmente per l'inglese e che si
+basa su algoritmi a stati finiti e sul linguaggio JAPE (vedi paragrafo
+\ref{par:jape}).
+
+I componenti di ANNIE formano una pipeline, i cui componenti vengono
+descritti di seguito
+
+\subsubsection{Document Reset}
+La Document Reset PR è un plugin che permette di rimuovere alcuni
+\emph{annotation set} dal documento sul quale viene eseguito,
+lasciando all'utente la possibilità di scegliere quali mantenere. Di
+default si utilizza all'inizio della pipeline per togliere tutti gli
+\emph{annotation set} tranne gli Original Markups, prima di ricrearli
+e ripopolarli con l'uso degli altri plugin CREOLE.
+\subsubsection{Tokeniser}
+Il Tokeniser divide il testo in piccole unità, chiamate Token, che
+rappresentano le parole, i numeri o la punteggiatura. Le annotazioni
+di tipo Token create contengono alcune features che le descrivono.
+
+Tutti i Token contengono una feature \emph{kind} che indica il tipo di
+token e che può avere i seguenti valori:
+\begin{itemize}
+\item word: il token è composto da un insieme contiguo di lettere
+  maiuscole o minuscole senza segni di punteggiatura se non un
+  trattino. I token di tipo ``word'' contengono anche una feature
+  \emph{orth} che contiene informazioni ortografiche che indicano la
+  distribuzione delle lettere maiuscole e minuscole nel token.
+\item number: il token è una sequenza di cifre.
+\item symbol: il token contiene una sequenza di simboli.
+\item punctuation: il token è un simbolo di punteggiatura. Può essere
+  uno \emph{start punctuation} (ad es. '(' ), un \emph{end
+    punctuation} (ad es. ')' ), oppure un tipo di punteggiatura
+  generico. 
+\end{itemize}
+
+Il Tokeniser crea anche un altro tipo di annotazione chiamato
+SpaceToken, che rappresenta tutti gli spazi e tutti i caratteri di
+controllo come i line feed o i carriage return.
+
+ANNIE include, oltre al Tokeniser generico appena descritto, un
+English Tokeniser costituito dal Tokeniser generico e da un insieme di
+regole per adattare l'output generico al POS Tagger per l'inglese
+
+\subsubsection{Gazetteer}
+Il Gazetteer, come spiegato nel paragrafo \ref{par:gazetteer}, ha lo
+scopo di individuare nel testo parole specificate in una lista. Tale
+lista è un file di testo in cui a ogni riga corrisponde una parola.
+
+I file di testo che contengono le liste sono individuati da un file di
+indice (lists.def) che indica anche per ogni lista un \emph{minor
+  type} e un \emph{major type}: ogni match individuato sarà annotato
+con un'annotazione di tipo Lookup che conterrà anche in corrispondenti
+\emph{minor type} e \emph{major type} come features.
+\subsubsection{RegEX Sentence Splitter}
+Il RegEx Sentence Splitter è un plugin basato sulle espressioni
+regolari che individua le frasi nel testo e le annota con
+un'annotazione di tipo Sentence. La punteggiatura di fine frase (come
+un punto) viene annotata con una annotazione di tipo Split.
+\subsubsection{Part Of Speech Tagger}
+Il POS Tagger è una versione modificata del Brill Tagger e aggiunge
+alle annotazioni di tipo Token una feature \emph{category} che indica
+la parte del discorso del Token (ad esempio se è un verbo, un nome, un
+aggettivo, e così via).
+
+Il POS Tagger fa uso di un insieme di regole e di un dizionario
+costruiti a partire da un sottoinsieme di articoli del Wall Street
+Journal.
+
+\subsubsection{Tagger Framework}\label{par:gatetagger}
+Il Tagger Framework è un plugin inizialmente sviluppato per integrare
+con GATE il TreeTagger, ma che poi è stato
+trasformato in un generico wrapper che supporta molti tagger
+diversi. Fra i tagger supportati ci sono GENIA (un tagger biomedico),
+Hunpos (che supporta l'inglese e l'ungherese), TreeTagger (che suporta
+il tedesco, il francese, lo spagnolo, l'italiano e l'inglese), e lo
+Stanford Tagger (che supporta l'inglese, il tedesco e l'arabo).
+
+Il plugin si basa su alcune semplici ipotesi sul funzionamento del
+tagger esterno. La prima ipotesi è che il tagger deve leggere un file
+esterno in cui ogni riga corrisponde a un'annotazione (ad esempio una
+riga per ogni frase o una riga per ogni token). La seconda ipotesi è
+che il tagger deve stampare il suo output sullo standard output,
+anch'esso con un'annotazione per riga.
+
+
+
+\end{document}

@@ -1,0 +1,66 @@
+\makebox[\textwidth][c]{
+  \begin{tikzpicture}[auto]
+    \node [app2] (gest) {\dimg Gestore\\\dimg comandi};
+
+    \node [coda, right = 0.5cm of gest] (coda) {\dimg Coda\nodepart{two}\dimg processi};
+    \node [point, above left = 0.5cm and 0.25cm of coda] (p1) {};
+    \node [point, below right = 0.5cm and 0.25cm of coda] (p2) {};
+
+    \node [app2, right = 0.5cm of coda] (thread) {\dimg Thread};
+    \node [choice, vuoto, right = 0.5cm of thread] (cho) {};
+
+    \node [app2, above right = 0.25cm and 0.5cm of cho.east, text width=2.5cm] (keyeng) {\dimg Keyword engine};
+    \node [app2, below right = 0.25cm and 0.5cm of cho.east, text width=2.5cm] (coeng) {\dimg Competence engine};
+
+    \node [app3, above = 0.5cm of keyeng] (landet) {\dimg Language detector};
+    \node [app3, left = 0.5cm of landet] (chuspli) {\dimg Chunk splitter};
+    \node [app4, right = 0.5cm of landet] (keyman) {\dimg Keyword Manager};
+
+    \node [point, above = 0.3cm of landet] (p3) {};
+    \node [point, right = 4.5cm of p3] (p4) {};
+    \node [point, below = 1.25cm of p4] (p5) {};
+
+    \node [app3, right = 4cm of cho] (gate) {\dimg Gate};
+
+    \node [app3, below = 0.5cm of coeng, xshift = 0.5cm] (pan) {\dimg Person analyzer};
+    \node [app4, right = 0.5cm of pan] (rdf) {\dimg RDF serializer};
+    \node [app3, left = 0.7cm of pan] (ois) {\dimg Ontology instance};
+
+    \node [point, below = 0.3cm of pan] (p6) {};
+    \node [point, right = 4cm of p6] (p7) {};
+    \node [point, above = 1.25cm of p7] (p8) {};
+
+    \draw [freccia] (gest.east) -| (p1) -| (coda.north);
+    \draw [freccia] (coda.south) |- (p2) |- (thread.west);
+    \draw [freccia] (thread) -- (cho);
+    \draw [freccia] (cho) |- (keyeng);
+    \draw [freccia] (cho) |- (coeng);
+
+    \draw [dfreccia] (keyeng) -- (chuspli);
+    \draw [dfreccia] (keyeng) -- (landet);
+    \draw [freccia] (keyeng) -- (keyman);
+
+    \draw [dfreccia] (coeng) -- (pan);
+    \draw [dfreccia] (pan) -- (ois);
+    \draw [freccia] (coeng) -- (rdf);
+
+    \draw [dfreccia] (keyeng.east) -- (gate);
+    \draw [dfreccia] (coeng.east) -- (gate);
+
+    \draw [nfreccia] (p3) -- (p4);
+    \draw [nfreccia] (p4) -- (p5);
+    \draw [freccia] (p5) -- (gate);
+    \draw [freccia] (p3) -- (landet);
+    \draw [freccia] (p3) -| (chuspli);
+
+    \draw [nfreccia] (p6) -- (p7);
+    \draw [nfreccia] (p7) -- (p8);
+    \draw [freccia] (p6) -- (pan);
+    \draw [freccia] (p8) -- (gate);
+
+    \draw<2> [evidenzia, yscale=1.5] (coda) circle (1cm);
+    \draw<3> [evidenzia, xscale=1.5] (thread) circle (0.5cm);
+    \node[point, right = 1.5cm of cho] (pe) {};
+    \draw<4> [evidenzia, xscale=2] (pe) circle (1.2cm);
+  \end{tikzpicture}
+}

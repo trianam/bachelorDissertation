@@ -1,0 +1,20 @@
+\makebox[\textwidth][c]{
+  \begin{tikzpicture}[auto]
+    \node [weblist, font = \dimg, minimum width = 1.5cm, minimum height = 1cm] (web) {Web};
+    \node [app2, right = 1.5cm of web, font = \dimg, minimum width = 2cm] (crawler) {Crawler};
+    \draw [freccia] (web) -- (crawler);
+
+    \node [db, above = 0.5cm of crawler, font = \dimg] (keydb) {Keyword};
+    \draw [dfreccia] (keydb) -- (crawler);
+
+    \node [app3, below = 0.1cm of crawler, font = \dimg, minimum width = 1.75cm] (textana) {Analisi testo};
+    \node [app3, below = 0.1cm of textana, font = \dimg, minimum width = 1.75cm] (trad) {Traduzioni};
+
+    \node [rdf, right = 3cm of crawler, font = \dimg] (rdf) {Base\\di\\conoscenza};
+    \draw [freccia] (crawler) -- (rdf);
+
+    \node [app, right = 1cm of keydb, font =\dimg] (editor) {Editor};
+    \draw [dfreccia] (editor) -- (keydb);
+    \draw [dfreccia] (editor) -- (rdf);
+  \end{tikzpicture}
+}

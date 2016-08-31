@@ -1,0 +1,2303 @@
+\documentclass[tesi.tex]{subfiles}
+\begin{document}
+\chapter{Analisi dell'applicazione}
+
+\section{Ontologia}\label{sec:ontologia}
+L'applicazione si interfaccia ad una ontologia gestita da un \emph{RDF
+  store} \emph{Sesame}. In questa ontologia vengono inserite le
+istanze delle classi
+riguardanti le persone, i loro insegnamenti, e le loro
+competenze.
+
+In figura \ref{fig:ontologia} \`e possibile vedere uno schema
+dell'ontologia di dominio, con le varie classi e le relazioni.
+\imager{img/ontologia_dominio.eps}{Ontologia di dominio.}{fig:ontologia}
+Il prefisso \xml{uni:} corrisponde al \emph{namespace}
+\xml{http://www.dsi.unifi.it/CMSAteneoCompetence\#}.
+
+Il \emph{crawler} popola l'ontologia con le informazioni che estrae
+dal sito web dell'ateneo. L'applicazione scrive
+sull'ontologia in due punti diversi:
+\begin{itemize}
+\item quando viene fatto il \emph{crawling} delle competenze;
+\item quando l'esperto organizza lo \emph{SKOS} delle competenze;
+\end{itemize}
+
+\subsection{\emph{Crawling} di competenze}
+In figura \ref{fig:ontologiaIstanze} vengono mostrate le istanze che
+vengono create, le loro propriet\`a e relazioni durante la fase di
+\emph{crawling} di competenze.
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}%[auto]
+      \matrix[row sep = 3cm, column sep = 2.5cm] {
+        %prima
+        \node[uri] (persona) {\dimg Persona};&
+        \\
+        %seconda
+        &
+        \node[uri] (bnode) {}; \\
+        %terza
+        \node[uri] (insegnamento) {\dimg Insegnam.}; &
+        \node[uri] (competenza) {\dimg Compet.}; \\
+      };
+      \begin{scope}[node distance = 2.5cm]
+        %nodi di persona
+        \node[uriEsistente, below left = of persona] (dipartimento) {\dimg Dipartimento};
+        \node[uriEsistente, left = of persona] (classePers) {\codg{foaf:Person}};
+        \node[uriChoice, above left = of persona] (classiPers) {
+          \codg{uni:AssociateProfessor}\\
+          \codg{uni:Professor}\\
+          \codg{uni:FullResearcher}
+          %\codg{uni:Researcher}
+        };
+        \node[letterale, above = of persona] (nomePers) {\dimg Nome};
+        \node[letterale, above right = of persona] (url1Pers) {\dimg Url};
+        \node[letterale, right = 3cm of persona] (url2Pers) {\dimg Url};
+
+        %nodi di bnode
+        \node[letterale, above right = of bnode] (occorrenze) {\dimg Occorrenze};
+        
+        %nodi di insegnamento
+        \node[uriEsistente, left = of insegnamento] (classeIns) {\codg{uni:Course}};
+        \node[letterale, below left = of insegnamento] (nomeIns) {\dimg Nome};
+        \node[letterale, below = of insegnamento] (urlIns) {\dimg Url};
+
+        %nodi di competenza
+        \node[uriEsistente, below right = of competenza] (classeComp) {\codg{skos:concept}};
+        \node[uriEsistente, below = of competenza] (altraClasseComp) {\codg{uni:temporaryXXXStore}};
+        \node[letterale, right = of competenza] (nomeComp) {\dimg Nome};
+      \end{scope}
+
+      %frecce persona
+      \draw[freccia] (persona) to node[labelg]{\codg{uni:takeCourse}} (insegnamento);
+      \draw[freccia] (persona) to node[labelg]{\codg{uni:isAffiliatedOf}} (dipartimento);
+      \draw[freccia] (persona) to node[labelg]{\codg{rdf:type}} (classePers);
+      \draw[tfreccia] (persona) to node[labelg]{\codg{rdf:type}} (classiPers);
+      \draw[freccia] (persona) to node[labelg]{\codg{foaf:name}} (nomePers);
+      \draw[freccia] (persona) to node[labelg]{\codg{uni:hasPageUrl}} (url1Pers);
+      \draw[freccia] (persona) to node[labelg]{\codg{uni:hasSecondPageUrl}} (url2Pers);
+      \draw[freccia] (persona) to node[labelg]{\codg{uni:hasCompetence}} (bnode);
+
+      %frecce bnode
+      \draw[freccia] (bnode) to node[labelg]{\codg{uni:hasOccurrence}} (occorrenze);
+      \draw[freccia] (bnode) to node[labelg]{\codg{uni:competenceType}} (competenza);
+
+
+      %frecce insegnamento
+      \draw[freccia] (insegnamento) to node[labelg]{\codg{rdf:type}} (classeIns);
+      \draw[freccia] (insegnamento) to node[labelg]{\codg{skos:subject}} (competenza);
+      \draw[freccia] (insegnamento) to node[labelg]{\codg{rdfs:label}} (nomeIns);
+      \draw[freccia] (insegnamento) to node[labelg]{\codg{uni:hasPageUrl}} (urlIns);
+
+      %frecce competenza
+      \draw[tfreccia] (competenza) to node[labelg]{\codg{rdf:type}} (altraClasseComp);
+      \draw[freccia] (competenza) to node[labelg]{\codg{rdf:type}} (classeComp);
+      \draw[freccia] (competenza) to node[labelg]{\codg{skos:prefLabel}} (nomeComp);
+
+      %legenda
+      \node [legenda, above = 0.5cm of occorrenze] (leg) {
+        \begin{tikzpicture}
+          \node[uri] (uno) {};
+          \node[legendalab, right = 0.1cm of uno] {\dimg Nuova risorsa};
+
+          \node[uriEsistente, below = 0.5cm of uno] (due) {};
+          \node[legendalab, right = 0.1cm of due] {\dimg Risorsa esistente};
+          
+          \node[uriChoice, text width=5pt, text depth=5pt, below = 0.5cm of due] (tre) {};
+          \node[legendalab, right = 0.1cm of tre] {\dimg Risorsa a scelta};
+
+          \node[letterale,text width=5pt, text depth=5pt, below = 0.5cm of tre] (treb) {};
+          \node[legendalab, right = 0.1cm of treb] {\dimg Letterale};
+
+          \node[point, below = 0.5cm of treb.south west] (qua) {};
+          \node[point, right = 0.5cm of qua] (quab) {};
+          \draw[freccia] (qua) -- (quab);
+          \node[legendalab, right = 0.1cm of quab]{\dimg Sempre};
+
+          \node[point, below = 0.5cm of qua] (cin) {};
+          \node[point, right = 0.5cm of cin] (cinb) {};
+          \draw[tfreccia] (cin) -- (cinb);
+          \node[legendalab, right = 0.1cm of cinb]{\dimg Solo alcuni casi};
+        \end{tikzpicture}
+      };
+    \end{tikzpicture}
+  \end{center}
+  \caption{Istanze create in fase di \emph{crawling} di competenze}
+  \label{fig:ontologiaIstanze}
+\end{figure}
+Tali istanze se gi\`a esistenti, ad esempio nel caso di un lancio di
+\emph{crawling} ripetuto, vengono aggiornate con eventuali modifiche.
+
+Durante la fase di \emph{crawling} delle competenze vengono analizzate
+le persone singolarmente\footnote{Vedere sezione
+  \ref{sec:crawlingcomp} per dettagli sul \emph{crawler} di
+  competenze.}, e per ogni persona vengono create in ordine:
+\begin{enumerate}
+\item l'istanza della persona;
+\item gli eventuali insegnamenti di quella persona;
+\item le competenze associate ai corsi e alla persona.
+\end{enumerate}
+Dopo la creazione di tali risorse vengono creati per ogni competenza
+i \emph{blank node} che indicano l'associazione della competenza alla persona, e le relazioni tra
+le varie istanze.
+
+Per quanto riguarda l'istanza della persona, in ordine vengono
+effettuate le seguenti operazioni:
+\begin{enumerate}
+\item viene creata la risorsa
+  usando un \emph{URI} composto dal prefisso
+  \xml{urn:u-gov:unifi:AC\_AB0:} seguito dall'\emph{hash} del codice
+  fiscale della persona prelevato dalla tabella
+  \sql{carriera}\footnote{Per i dettagli vedere sezione
+    \ref{sec:tabellacarriera}.};
+\item viene impostato il tipo della risorsa con \xml{rdf:type} a
+  \xml{foaf:Person};
+\item  viene impostato il nome della persona con la
+  propriet\`a \xml{foaf:name};
+\item vengono impostate le pagine della persona tramite le propriet\`a
+  \xml{uni:hasPageUrl} e \xml{uni:hasSecondPageUrl}, la prima indica
+  la pagina della piattaforma \emph{Cercachi}, la seconda di
+  \emph{Penelope};
+\item vengono create le risorse riguardanti gli insegnamenti;
+\item vengono create le risorse riguardanti le competenze trovate
+  nella pagina della piattaforma \emph{Penelope}.
+\end{enumerate}
+Viene valutato se la persona analizzata \`e un
+professore associato, un professore, o un
+ricercatore, e, nel caso, viene impostato il tipo della
+persona anche\footnote{In \emph{RDF} e possibile assegnare pi\`u di un
+  tipo alle risorse.} a uno dei seguenti:
+\begin{itemize}
+\item \xml{uni:AssociateProfessor} per un professore associato;
+\item \xml{uni:Professor} per un professore;
+\item \xml{uni:FullResearcher} per un ricercatore associato.
+\end{itemize}
+
+Le istanze degli insegnamenti vengono create durante l'analisi della
+persona, e vengono effettuate le seguenti operazioni:
+\begin{enumerate}
+\item viene creata la risorsa usando sempre il prefisso\\
+  \xml{urn:u-gov:unifi:AC\_AB0:} seguito dal codice del corso prelevato
+  dalla sua pagina;
+\item viene impostato il tipo della risorsa con \xml{rdf:type} a
+  \xml{uni:Course};
+\item viene impostato il nome della risorsa con la propriet\`a
+  \xml{rdfs:label};
+\item viene impostata la pagina del corso sulla piattaforma
+  \emph{Penelope} con la propriet\`a \xml{uni:hasPageUrl};
+\item vengono create le risorse riguardanti le competenze trovate
+  nella pagina del corso.
+\end{enumerate}
+
+Le istanze delle competenze possono venire create a partire dalla
+pagina di una persona o dalle pagine degli insegnamenti di tale
+persona; le risorse create nei due casi sono identiche, cambia una
+propriet\`a che associa l'insegnamento alla competenza che viene
+scritta nella fase successiva. Le operazioni
+effettuate sono le seguenti:
+\begin{enumerate}
+\item viene creata la risorsa con l'\emph{URI} composto da
+  \xml{http://www.dsi.unifi.it/} seguito dal codice del dipartimento
+  per il quale \`e stato lanciato il \emph{crawling}, seguito dal
+  carattere \xml{\#}, seguito dal valore testuale della competenza
+  (codificata come un uri);
+\item viene impostato il tipo della risorsa con \xml{rdf:type} a
+  \xml{skos:Concept};
+\item vengono impostati i valori nelle diverse lingue (attualmente
+  due) con la propriet\`a \xml{skos:prefLabel} differenziando le
+  lingue appendendo al valore \xml{@} seguito dal codice della lingua;
+\end{enumerate}
+
+Le fasi appena analizzate corrispondono nel codice ai blocchi in
+output della fase di analisi della persona dello schema di figura
+\ref{fig:crawlingComp} a pagina \pageref{fig:crawlingComp}. La fase
+successiva di serializzazione, oltre che a scrivere fisicamente
+nell'\emph{RDF store} le istanze viste sopra effettua le seguenti
+operazioni:
+\begin{enumerate}
+\item se la competenza inserita \`e nuova viene aggiunto alla
+  competenza il tipo \xml{uni:temporary} seguito dal codice del
+  dipartimento che si sta analizzando (indicato con \xml{XXXStore} nello
+  schema);
+\item se la competenza inserita \`e stata trovata su una pagina di un
+  corso viene creata l'associazione tra il corso e la competenza con
+  la propriet\`a \xml{skos:subject};
+\item crea i \emph{blank node}
+  che si vedono nello schema;
+\item crea anche le propriet\`a che indicano le
+  relazioni tra queste istanze.
+\end{enumerate}
+L'uso del vocabolario \emph{SKOS} per rappresentare le competenze e
+per associare un corso con queste rende possibile identificare i
+soggetti trattati da un certo corso oltre che organizzare le
+competenze di una persona.
+
+La fase di creazione dei \emph{black node} si articola come segue, per
+ogni competenza estratta:
+\begin{enumerate}
+\item viene creato un \emph{blank node} con
+  identificativo \xml{\_:} seguito dal nome della persona senza spazi,
+  seguito dalla stringa \xml{Competence}, seguito dall'\emph{URI}
+  della competenza;
+\item viene creata la relazione tra la persona e il \emph{blank node}
+  tramite la propriet\`a \xml{uni:hasCompetence};
+\item viene creata la relazione tra il \emph{blank node} e la
+  competenza tramite la propriet\`a \xml{uni:competenceType};
+\item viene aggiunta la propriet\`a del \emph{blank node}
+  \xml{uni:hasOccurrence} con il numero di occorrenze della competenza
+  per quella persona (comprese le pagine dei suoi corsi).
+\end{enumerate}
+
+Le altre relazioni rimaste sono quelle tra la persona e i suoi insegnamenti;
+per ogni corso viene associata la persona a questi tramite la
+propriet\`a \xml{uni:takeCourse}.
+
+Se le istanze create esistono gi\`a in queste fasi vengono solamente
+aggiornati i valori che eventualmente differiscono, come il numero di
+occorrenze di una competenza su una persona.
+
+\subsection{Organizzazione dello \emph{SKOS}}
+Durante la creazione e la modifica dello \emph{SKOS} l'esperto
+organizza le competenze in alberi gerarchici. Dal
+lato dell'ontologia questo significa assegnare alle competenze, che
+gi\`a sono istanze di \xml{skos:Concept}, delle relazioni semantiche
+tramite la propriet\`a \xml{skos:narrower}. Inoltre vengono
+organizzati dei vocabolari tramite delle istanze di
+\xml{skos:ConceptScheme}, una per ogni dipartimento, e le propriet\`a
+di questi \xml{skos:hasTopConcept}.
+
+Gli uri dei \emph{concept schema} sono formati da
+\xml{http://www.dsi.unifi.it/} seguito dal codice del dipartimento,
+seguito da \xml{\#conceptSchema}, e questi \emph{concept schema}
+vengono sempre inizializzati per tutti i dipartimenti.
+
+Nel pannello di amministrazione di figura
+\ref{fig:pannelloamministrazione1} a pagina
+\pageref{fig:pannelloamministrazione1} vengono mostrati a sinistra le
+competenze ancora non organizzate nello \emph{SKOS}, a destra quelle
+organizzate. Le competenze di sinistra vengono prelevate interrogando
+l'\emph{RDF Store} su tutti glii \emph{skos:Concept} di tipo
+\xml{uni:temporaryXXXStore} con \xml{XXXStore} che indica il codice del
+dipartimento che viene amministrato.
+Quando una competenza viene inserita nello \emph{SKOS} di destra,
+viene eliminato da questa il tipo \xml{uni:temporaryXXXStore}, con
+\xml{XXXStore} codice del dipartimento.
+
+L'esperto pu\`o anche creare nuove istanze di \xml{skos:Concept}
+fornendo una \emph{label}, e inserirle nella relazione semantica di un
+certo albero di competenze allo scopo di creare degli aggregatori di
+competenze effettivamente prelevate dalle pagine.
+
+Nell'operazione di spostamento delle competenze, il suo \emph{URI}
+rimane inalterato, quindi le propriet\`a \xml{uni:competenceType} e
+\xml{skos:subject} rimangono valide.
+
+In figura \ref{fig:ontologiaSkos} \`e possibile vedere uno schema
+delle possibili relazioni tra una competenza appena inserita, o
+spostata, nello \emph{SKOS}, e le altre risorse. Notare
+l'assenza del tipo \xml{uni:temporaryXXXStore}, che come detto viene
+eliminato. Inoltre vengono omesse le propriet\`a \xml{uni:competenceType} e
+\xml{skos:subject} che hanno come oggetto le competenze (a meno che
+non siano competenze create dall'esperto).
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}%[auto]
+      \node[uri] (comp) {Competenza};
+      \node[uriEsistente, below left = 2.5cm and 0.5cm of comp] (schema) {\dims Concept schema};
+      \node[uriEsistente, below right = 2cm and 0.5cm of comp] (altra) {\dims Competenza};
+      
+      \begin{scope}[node distance = 2.5cm]
+        %nodi di schema
+        \node[uriEsistente, below left = of schema] (tipoSchema) {\cods{skos:ConceptScheme}};
+
+        %nodi di altra
+        \node[uriEsistente, below = of altra] (tipoAltra) {\cods{skos:Concept}};
+        \node[letterale, below left = of altra] (nomeAltra) {\dims Nome};
+        
+        %nodi di comp
+        \node[uriEsistente, left = of comp] (tipoComp) {\cods{skos:Concept}};
+        \node[letterale, above left = of comp] (nomeComp) {\dims Nome};
+
+      \end{scope}
+
+      %frecce comp
+      \draw[freccia] (comp) to node[labelg]{\codg{rdfType}} (tipoComp);
+      \draw[freccia] (comp) to node[labelg]{\codg{skos:prefLabel}} (nomeComp);
+
+      %frecce altra
+      \draw[tfreccia] (altra) to node[labelg]{\codg{skos:narrower}} (comp);
+      \draw[freccia] (altra) to node[labelg]{\codg{rdfType}} (tipoAltra);
+      \draw[freccia] (altra) to node[labelg]{\codg{skos:prefLabel}} (nomeAltra);
+
+      %frecce schema
+      \draw[tfreccia] (schema) to node[labelg]{\codg{skos:hasTopConcept}} (comp);
+      \draw[freccia] (schema) to node[labelg]{\codg{rdfType}} (tipoSchema);
+
+      %legenda
+      \node [legenda, above right = 0.5cm and 1cm of comp.north] (leg) {
+        \begin{tikzpicture}
+          \node[uri] (uno) {};
+          \node[legendalab, right = 0.1cm of uno] {\dimg Competenza spostata};
+
+          \node[uriEsistente, below = 0.5cm of uno] (due) {};
+          \node[legendalab, right = 0.1cm of due] {\dimg Risorsa esistente};
+
+          \node[letterale,text width=5pt, text depth=5pt, below = 0.5cm of due] (tre) {};
+          \node[legendalab, right = 0.1cm of tre] {\dimg Letterale};
+
+        \end{tikzpicture}
+      };
+    \end{tikzpicture}
+  \end{center}
+  \caption{Possibili relazioni di una competenza nello \emph{SKOS}}
+  \label{fig:ontologiaSkos}
+\end{figure}
+
+Le due propriet\`a:
+\begin{itemize}
+\item \xml{skos:hasTopConcept},
+\item \xml{skos:narrower},
+\end{itemize}
+sono mutuamente esclusive rispetto alla nuova competenza inserita.
+La propriet\`a \xml{skos:hasTopConcept} da un \emph{concept} schema,
+viene creata se la competenza viene spostata a livello zero nello
+\emph{SKOS}. \xml{skos:narrower} se viene spostata sotto ad un'altra
+competenza.
+
+Vedere la sezione \ref{sec:skos} per informazioni sul significato
+semantico delle propriet\`a usate.
+
+\section{Applicazioni GATE}\label{sec:applicazionigate}
+Durante l'esecuzione delle operazioni di \emph{crawling} vengono usate
+quattro \emph{pipe} di \emph{GATE} identificate dal nome del file che
+viene caricato tramite \emph{GATE embedded} all'interno del codice nei
+diversi punti del programma:
+\begin{itemize}
+\item \file{langDetector.xgapp} viene caricata in fase di
+  \emph{crawling} di \emph{keyword}, durante la fase di riconoscimento
+  della lingua dello schema di figura \ref{fig:crawlingKey} di pagina
+  \pageref{fig:crawlingKey} e svolge la funzione di identificare il
+  linguaggio del documento di \emph{input};
+\item \file{en.xgapp} viene caricata nella stessa fase di
+  \emph{crawling} di \emph{keyword}, durante la fase di estrazione dei
+  sostantivi del solito schema del precedente; la sua funzione \`e quella di
+  annotare i sostantivi del documento di \emph{input} che deve essere in
+  lingua inglese;
+\item \file{it.xgapp} viene caricata nello stesso punto del precedente
+  e svolge la stessa funzione, per\`o il documento di \emph{input} deve
+  essere in lingua italiana;
+\item \file{competenceExtraction.xgapp} \`e l'applicazione pi\`u
+  importante, viene richiamata in ogni punto in cui vengono usate le
+  funzioni di \emph{GATE} che non siano i precedenti tre punti. Svolge
+  funzioni diverse a seconda del contesto in cui viene richiamata e
+  del documento che viene fornito come \emph{input}.
+\end{itemize}
+
+Queste applicazioni vengono preventivamente sviluppate tramite
+\emph{GATE developer} e salvate nei \emph{file} sopra
+indicati. \emph{Java} fa uso di tali applicazioni interfacciandosi nel codice tramite
+\emph{GATE embedded}.
+
+Il metodo di interfacciamento tra l'applicazione e
+\emph{GATE} \`e simile in tutti i punti in cui viene usato, e per
+le quattro diverse \emph{pipe}:
+\begin{enumerate}
+\item viene istanziata la classe \java{StandAloneAnnie} che contiene i
+  metodi necessari per potersi interfacciare con \emph{GATE
+  embedded} con il codice:
+  \begin{javablock}
+StandAloneAnnie annie = new StandAloneAnnie();
+  \end{javablock}
+  il costruttore di \java{StandAloneAnnie} fornisce la possibilit\`a
+  di stabilire un codice numerico per indicare quale delle quattro
+  applicazioni caricare;
+
+\item viene creato un corpus contenente i documenti da analizzare, un
+  corpus consiste semplicemente in un \java{ArrayList} di stringhe di indirizzi
+  di documenti. Spesso il corpus contiene un solo documento, e si
+  istanzia nel seguente modo:
+  \begin{javablock}
+ArrayList<String> corpusDocs = new ArrayList<String>();
+corpusDocs.add(pageLink);
+  \end{javablock}
+
+\item vengono scelte quali annotazioni reperire che vanno indicate
+  in un \java{HashSet} di stringhe nel seguente modo:
+  \begin{javablock}
+HashSet<String> annotationTypes = new HashSet<String>();
+annotationTypes.add("UnifiCompetence");
+  \end{javablock}
+
+\item viene lanciato gate richiamando il codice:
+  \begin{javablock}
+Set<Annotation> annotations = annie.computeAnnotationsOnCorpus(corpusDocs, annotationTypes);
+  \end{javablock}
+  che ritorna un \java{Set} iterabile di \java{Annotation};
+
+\item viene scorso il \java{Set} ritornato nel seguente modo:
+  \begin{javablock}
+Iterator<Annotation> annotIter = annotations.iterator();
+while(annotIter.hasNext()){
+  Annotation currentAnnotation = (Annotation)annotIter.next();
+  ...
+  \end{javablock}
+
+\item \`e possibile ottenere il testo annotato da una certa
+  annotazione nel seguente modo:
+  \begin{javablock}
+String currentAnnotationText = annie.getTextByOffset(
+                        currentAnnotation.getStartNode().getOffset(),
+                        currentAnnotation.getEndNode().getOffset(),
+                        pageLink);
+  \end{javablock}
+
+\item \`e possibile ottenere una certa \emph{feature}, associata ad una
+  certa annotazione, nel seguente modo:
+  \begin{javablock}
+String lang = (String) currentAnnotation.getFeatures().get("lang");
+  \end{javablock}
+\end{enumerate}
+
+\subsection{Applicazione \file{langDetector.xgapp}}
+Questa applicazione usa il \emph{plugin} \gate{LingPipe} di
+\emph{GATE}, che \`e un \emph{wrapper} per la \emph{suite} di librerie
+\emph{Java} \emph{LingPipe}.
+
+Tale plugin fornisce diverse risorse tra cui: un \emph{tagger}, un
+\emph{sentence splitter} e un \emph{tokenizer}. L'unica risorsa che
+viene usata in questa \emph{pipe} \`e \gate{LingPipe Language
+  Identifier} che, a differenza delle altre risorse, non produce
+annotazioni, ma crea una \emph{feature} di documento chiamata
+\emph{lang} avente come valore il codice della lingua del documento.
+
+Prima di questa risorsa viene eseguita la risorsa \gate{Document
+  Reset} che riporta il documento allo stato iniziale azzerando
+eventuali annotazioni o \emph{feature} prima di
+eseguire la \emph{pipe}.
+
+Il risultato dell'esecuzione di questa \emph{pipe} \`e una
+\emph{feature} di documento che viene interpretata dal \emph{crawler}
+delle \emph{keyword} per riconoscere se un \emph{file} contiene una
+frase in italiano o in inglese.
+
+\subsection{Applicazione \file{en.xgapp}}
+Questa applicazione usa una \emph{pipe} \emph{ANNIE} composta dalle
+seguenti risorse in ordine:
+\begin{enumerate}
+\item \gate{Document Reset};
+\item \gate{ANNIE Gazetteer} con i seguenti \emph{gazetteer}:
+  \begin{itemize}
+  \item \gate{GazetteerCaseSensitive};
+  \item \gate{GazetteerCaseInsensitive};
+  \item \gate{GazetteerStopWords};
+  \end{itemize}
+\item \gate{GATE Unicode Tokeniser}; 
+\item \gate{ANNIE Sentence Splitter};
+\item \gate{ANNIE POS Tagger};
+\item \gate{ANNIE NE Transducer} che usa le regole indicate nella
+  grammatica \file{en.jape}.
+\end{enumerate}
+
+Le risorse vengono eseguite in cascata nell'ordine indicato.
+
+\gate{Document Reset} riporta il documento alle condizioni iniziali.
+I gazetteer permettono di annotare nel documento certe parole, in
+particolare vengono annotate le \emph{stop words} indicate nel
+\emph{gazetteer} \gate{GazetteerStopWords-en} che sono una serie di
+parole indesiderate.
+\gate{Unicode Tokeniser} annota nel testo ogni \emph{token} ossia ogni
+singola parola, o segno di punteggiatura.
+\gate{Sentence Splitter} annota ogni frase nel testo, per funzionare
+ha bisogno che il testo sia gi\`a annotato con i \emph{token}.
+\gate{POS Tagger} annota le parti del testo (nomi, verbi, etc\dots),
+per funzionare ha bisogno che il testo sia gi\`a annotato con le
+frasi. \gate{NE Transducer} applica le regole \emph{JAPE} indicate
+nella sua grammatica, tali regole fanno in modo di eliminare le
+annotazioni di tipo \emph{nome} risultanti dall'esecuzione del
+\emph{pos tagger} che sono state annotate come \emph{stop word}
+dall'esecuzione dei \emph{gazetteer}.
+
+Il risultato della \emph{pipe} \`e una serie di annotazioni
+denominate \emph{Noun} che indicano tutti i punti del testo dove
+compare un sostantivo. Questi sostantivi vengono estratti dal
+\emph{crawler} delle \emph{keyword} e passati al processo di
+traduzione e memorizazzione nel \emph{database} delle \emph{keyword}.
+
+\subsection{Applicazione \file{it.xgapp}}
+Questa applicazione \`e diversa dalla precedente nonostante abbia le
+stesse funzioni. Il motivo \`e che \emph{ANNIE}, di base, non \`e in grado di funzionare
+sulla lingua italiana.
+
+Per risolvere questo problema viene usato il plugin di \emph{GATE} \gate{TreeTagger}
+che consiste in un \emph{wrapper} per un programma esterno chiamato
+\emph{TreeTagger}.
+
+La \emph{pipe} quindi consiste nelle seguenti risorse:
+\begin{enumerate}
+\item \gate{Document Reset};
+\item \gate{ANNIE Gazetteer} con i seguenti \emph{gazetteer}:
+  \begin{itemize}
+  \item \gate{GazetteerCaseSensitive};
+  \item \gate{GazetteerCaseInsensitive};
+  \item \gate{GazetteerStopWords};
+  \end{itemize}
+\item \gate{GATE Unicode Tokeniser}; 
+\item \gate{TreeTagger};
+\item \gate{ANNIE NE Transducer} che usa le regole indicate nella
+  grammatica \file{it.jape}.
+\end{enumerate}
+
+Le funzioni sono simili alla \emph{pipe} per la lingua inglese, il
+\emph{sentence splitter} e il \emph{pos tagger} vengono sostituiti da
+\emph{TreeTagger}, e la grammatica \emph{JAPE} usata \`e quella del
+file \file{it.jape} invece di \file{en.jape}.
+
+Il risultato della \emph{pipe} \`e identico a quello di
+\file{en.xgapp} e viene usato nel solito modo.
+
+\subsection{Applicazione \file{competenceExtraction.xgapp}}
+\`E la \emph{pipe} principale del programma, essa viene richiamata
+ogni volta che vengono richiesti i servizi di \emph{GATE} che non
+siano uno dei punti visti per le altre \emph{pipe}.
+
+Ogni volta che viene richiamata viene eseguita tutta la \emph{pipe},
+e viene specificato quali sono le annotazioni da considerare
+significative.
+
+La \emph{pipe} completa \`e composta da:
+\begin{enumerate}
+\item \gate{document reset} per riportare il documento allo stato
+  originale;
+\item \gate{ateneo gazetteer} \`e il \emph{gazetteer} che presenta le
+  seguenti liste:
+  \begin{itemize}
+  \item \gate{ateneoPerson.lst} annota con il nome \gate{ateneoPerson}
+    tutti i nomi delle persone presenti nella lista;
+  \item \gate{unifiAddedCompetence\_skos.lst} annota con il nome\\
+    \gate{AteneoCompetence} tutte le \emph{keyword} di lingua inglese
+    presenti nella lista, tale lista viene inizializzata con le
+    \emph{keyword} del \emph{database} all'inizio della fase di
+    \emph{crawling} di competenze;
+  \item \gate{unifiAddedCompetence\_skos\_it.lst} \`e analoga alla
+    precedente, ma il nome delle annotazioni \`e
+    \gate{AteneoCompetence\_it};
+  \end{itemize}
+\item \gate{Unicode tokenizer} annota nel documento ogni parola e
+  simbolo di punteggiatura con \gate{Token};
+\item \gate{Sentence splitter} annota nel documento le frasi con
+  \gate{Sentence};
+\item \gate{Pos tagger} riconosce le parti del testo (sostantivo,
+  verbo, etc\dots) nel documento e le segna con la \emph{feature}
+  \gate{category} di \gate{Token};
+\item \gate{Annotation set transfer} serve per identificare i tag
+  \emph{HTML} nel documento come annotazioni dello stesso nome del
+  \emph{tag};
+\item \gate{competence grammar} applica le regole
+  \emph{JAPE} specificate, che sono:
+  \begin{itemize}
+  \item \gate{linkToPerson} annota i link alle pagine delle persone
+    nelle pagine della lista persone del dipartimento con il nome
+    \gate{LinkToPerson} e con l'\emph{url} del \emph{link} come
+    \emph{feature} \gate{href} di tali annotazioni, tali link vengono
+    cercati tra le parti del documento gi\`a annotate con
+    \gate{ateneoPerson} dal \emph{gazetteer};
+  \item \gate{linkToPenelope} annota il link alla piattaforma
+    \emph{Penelope} nella pagina della persona su \emph{cercachi} con
+    il nome \gate{LinkToPenelope} e con l'\emph{url} del \emph{link} come
+    \emph{feature} \gate{href} di tali annotazioni;
+  \item \gate{personType} annota nella pagina della persona su
+    \emph{cercachi} il tipo che pu\`o essere \gate{Professor},
+    \gate{AssociateProfessor}, o \gate{FullResearcher};
+  \item \gate{personSection} annota i link agli eventuali corsi
+    insegnati da una persona con il nome \gate{PersonSection}, la
+    \emph{feature} di tale annotazione \gate{section} uguale a
+    \gate{corso}, e l'\emph{url} del \emph{link} come
+    \emph{feature} \gate{href};
+  \item \gate{courseSection} annota il nome e il codice del corso in
+    una pagina di un insegnamento di una persona con il nome
+    \gate{CourseSection} e le sue \emph{feature} \gate{name} e \gate{code};
+  \item \gate{ateneo\_competence} sfruttando i risultati del \emph{Pos
+    tagger} annota con il nome di \gate{UnifiCompetence} le composizioni di una o pi\`u \emph{keyword} tramite
+    congiunzioni di \gate{AteneoCompetence}.
+  \end{itemize}
+\end{enumerate}
+
+Come gi\`a detto anche se la \emph{pipe} vista viene eseguita
+nell'ordine indicato tutte le volte che viene usato \emph{GATE}, i
+suoi effetti saranno diversi a seconda delle annotazioni che vengono
+prelevate e del documento sul quale viene eseguita.
+
+Riferendoci allo schema della fase di estrazione delle \emph{keyword}
+di figura \ref{fig:crawlingKey} di pagina
+\pageref{fig:crawlingKey}, la \emph{pipe}
+\gate{competenceExtraction.xgapp} viene usata solo nelle fasi:
+\begin{description}
+\item[estrazione dei link] dalla pagina con la lista iniziale delle persone;
+\item[estrazione delle frasi] da tutte le pagine delle persone e dei
+  loro insegnamenti.
+\end{description}
+Durante l'estrazione dei link vengono cercate dal programma le
+annotazioni \gate{linkToPerson} nella pagina iniziale del
+dipartimento, quindi della \emph{pipe} viene sfruttato il
+\emph{gazetteer} di persone iniziale, e la regola \emph{JAPE} che
+permette di recuperare i link di tali persone.
+
+Nella fase di estrazione delle frasi vengono cercate le annotazioni di
+tipo \gate{Sentence}, quindi si sfrutta il \emph{Sentence splitter}
+che a sua volta si appoggia al \emph{tokenizer}.
+
+Le altre due volte che viene usato \emph{GATE} nella fase di
+estrazione delle \emph{keyword} vengono usate le altre \emph{pipe}
+\gate{langDetector.xgapp}, \gate{it.xgapp} ed \gate{en.xgapp}.
+
+Nella fase di \emph{crawling} delle competenze visibile nello schema
+di figura \ref{fig:crawlingComp} di pagina \pageref{fig:crawlingComp},
+\emph{GATE} viene usato in due punti:
+\begin{description}
+  \item[estrazione dei link] dalla pagina con la lista iniziale delle
+    persone;
+  \item[analisi della persona] per ottenere le istanze della persona,
+    dei suoi insegnamenti, e delle sue competenze.
+\end{description}
+Il primo punto \`e analogo all'estrazione dei link nella
+fase di \emph{crawling} di \emph{keywors}.
+
+Nel secondo punto viene usato \emph{GATE} pi\`u volte al suo interno, e
+per ogni persona:
+\begin{enumerate}
+\item  viene estratto l'indirizzo della pagina alla
+  piattaforma \emph{Penelope} usando l'annotazione \gate{LinkToPenelope}
+  creata dalle regole \emph{JAPE};
+\item viene estratto il tipo di persona valutando quale annotazione
+  crea la regola \emph{JAPE} \gate{personType};
+\item vengono estratti l'indirizzi alle eventuali pagine dei corsi
+  insegnati usando le annotazioni \gate{PersonSection} delle regole
+  \emph{JAPE};
+\item vengono estratte le competenze nella pagina della persona usando
+  le annotazioni \gate{UnifiCompetence} della regola
+  \gate{ateneo\_competence} che si appoggia alle \emph{keyword}
+  annotate tramite \emph{gazetteer}.
+\end{enumerate}
+
+Per ogni pagina del corso estratta nel terzo punto, vengono eseguite
+le seguenti operazioni:
+\begin{enumerate}
+\item viene estratto il nome del corso e il suo codice tramite l'annotazione
+  \gate{CourseSection} basandosi sui \emph{tag} \emph{HTML};
+\item vengono estratte le competenze nella pagina del corso usando
+  le annotazioni \gate{UnifiCompetence} della regola
+  \gate{ateneo\_competence} che si appoggia alle \emph{keyword}
+  annotate tramite \emph{gazetteer}.
+\end{enumerate}
+
+
+\section{Analisi delle \emph{JSP} e delle chiamate alle \emph{servlet}}\label{sec:analisijsp}
+Tutte le interazioni tra le pagine \emph{JSP}, che sono quelle con cui
+interagisce direttamente l'utente, e la \emph{servlet} \emph{Java} che
+sta \emph{dietro}, seguono uno schema ben preciso. Questo schema viene
+usato sia quando un utente invia una richiesta alla \emph{servlet}, ad
+esempio di far partire un \emph{crawling}, sia quando la
+\emph{servlet} deve far visualizzare qualcosa all'utente, ad esempio
+la tabella delle \emph{keyword}.
+
+Questo schema \`e visibile in figura \ref{fig:chiamatejs}.
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}[auto]
+      \node [web] (jsp) {Pagina \emph{JSP}};
+      \node [app2, right = 2cm of jsp] (servlet) {Servlet};
+      \node [app2, below = 1.5cm of servlet] (factory) {Command factory};
+      \node [app2, right = 2cm of servlet] (gestore) {Gestore comandi};
+      \node [app2, below = 1.5cm of gestore] (altro) {Eventuali altri oggetti};
+      
+      \draw [dfreccia] (jsp) -- (servlet);
+      \draw [dfreccia] (servlet) -- (factory);
+      \draw [dfreccia] (servlet) -- (gestore);
+      \draw [dtfreccia] (gestore) -- (altro);
+
+    \end{tikzpicture}
+  \end{center}
+  \caption{Schema delle chiamate \emph{Javascript}}
+  \label{fig:chiamatejs}
+\end{figure}
+A sinistra vi sono le pagine \emph{JSP} visibili
+dall'utente\footnote{Vedere sezione \ref{sec:paginejsp}.}. Da queste
+vengono effettuate delle chiamate \emph{HTTP} tramite \emph{Javascript} a
+\link{/skosServlet/SkosManager?operation=codiceOperazione} con il
+parametro obbligatorio \java{operation} che consiste in una stringa
+che indica l'operazione richiesta, e altri parametri opzionali a
+seconda dell'operazione richiesta. Queste chiamate possono essere
+effettuate a partire da un'azione dell'utente, ad esempio un click su
+un pulsante, oppure possono essere richieste direttamente dalla pagina
+per poter visualizzare dei dati, ad esempio la tabella delle
+\emph{keyword}; comunque sia tutte vengono gestite dalla
+\emph{servlet} rappresentata dalla classe
+\java{OSIM\_SkosServlet}\footnote{Vedere sezione \ref{sec:classi}\label{note:appvediclassi}.},
+precisamente dal metodo \java{executeRequest} di tale classe.
+
+Il \emph{Javascript} chiamante si aspetta un valore di ritorno che la
+\emph{servlet} si occupa di fornire scrivendo su un oggetto
+\java{HttpServletResponse} dove viene settato un valore e un tipo.
+Solitamente il tipo \`e \java{application/json; charset=utf-8} che
+indica che il valore \`e un oggetto \emph{JSON}, infatti questo \`e il
+formato usato dalla servlet per comunicare con la pagina \emph{JSP}. A sua volta la
+\emph{servlet} riceve un oggetto \java{HttpServletRequest}, da dove
+\`e possibile estrarre i diversi parametri passati con la chiamata,
+compreso quello indispensabile \java{operation}.
+
+La \emph{servlet}, tramite il \emph{command factory}
+\java{OSIM\_CommandFactory}\footnote{Vedere nota
+  \ref{note:appvediclassi}.}, crea un oggetto gestore di comandi che pu\`o
+essere descritto da diverse classi che per\`o deve implementare
+l'interfaccia \java{OSIM\_RequestCommand}\footnote{Vedere nota
+  \ref{note:appvediclassi}.}. La funzione del \emph{command factory} \`e
+proprio quella indicare quale tipo di classe gestore istanziare per
+una certa operazione.
+
+Qualunque sia il gestore, viene eseguito il metodo \java{execute} su
+di esso. Tale metodo ha come parametri un oggetto
+\java{HttpServletRequest}, il solito passato alla \emph{servlet} che
+lo \emph{gira} al gestore, da cui estrae il tipo di operazione e gli
+eventuali altri parametri necessari allo svolgimento di essa. Il
+valore di ritorno \`e un \java{JSONObject} che poi viene
+\emph{incapsulato} dalla \emph{servlet} all'interno della risposta
+\emph{http}, che \`e il risultato dello svolgimento dell'operazione.
+
+Sovente il gestore dei comandi si avvale dell'uso di altre classi o
+thread.
+
+\section{Dettagli delle chiamate nelle due fasi di \emph{crawling}}
+Vengono analizzate nel dettaglio il flusso di chiamate che avviene
+dopo il gestore dei comandi nel caso delle
+fasi di \emph{crawling}. Nello schema di figura \ref{fig:chiamatecrawl}
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}[auto]
+      \node [app2] (gest) {Gestore comandi};
+
+      \node [coda, right = 0.5cm of gest] (coda) {Coda\nodepart{two}processi};
+      \node [point, above left = 0.5cm and 0.25cm of coda] (p1) {};
+      \node [point, below right = 0.5cm and 0.25cm of coda] (p2) {};
+
+      \node [app2, right = 0.5cm of coda, text width=1.5cm] (thread) {Thread};
+      \node [choice, vuoto, right = 0.5cm of thread] (cho) {};
+
+      \node [app2, above right = 1cm and 0.5cm of cho, text width=2.5cm] (keyeng) {Keyword engine};
+      \node [app2, below right = 1cm and 0.5cm of cho, text width=2.5cm] (coeng) {Competence engine};
+
+      \node [app3, above = 1cm of keyeng] (landet) {Language detector};
+      \node [app3, left = 0.5cm of landet] (chuspli) {Chunk splitter};
+      \node [app4, right = 0.5cm of landet] (keyman) {Keyword Manager};
+
+      \node [point, above = 0.5cm of landet] (p3) {};
+      \node [point, right = 4.5cm of p3] (p4) {};
+      \node [point, below = 3.5cm of p4] (p5) {};
+
+      \node [app3, below right = 1cm and 0.25cm of keyeng] (gate) {Gate};
+
+      \node [app3, below = 1cm of coeng] (pan) {Person analyzer};
+      \node [app4, right = 0.5cm of pan] (rdf) {RDF serializer};
+      \node [app3, left = 0.7cm of pan] (ois) {Ontology instance};
+
+      \node [point, below = 0.5cm of pan] (p6) {};
+      \node [point, right = 4.5cm of p6] (p7) {};
+      \node [point, above = 3.5cm of p7] (p8) {};
+
+      \node [legenda, below = 2cm of gest.south east] (leg) {
+        \begin{tikzpicture}
+          \node[app2,legendait] (uno) {};
+          \node[legendalab, right = 0.1cm of uno] {proc. principale};
+          \node[app3,legendait, below = 0.5cm of uno] (due) {};
+          \node[legendalab, right = 0.1cm of due] {proc. supporto};
+          \node[app4,legendait, below = 0.5cm of due] (tre) {};
+          \node[legendalab, right = 0.1cm of tre] {proc. output};
+        \end{tikzpicture}
+      };
+      
+      \draw [freccia] (gest.east) -| (p1) -| (coda.north);
+      \draw [freccia] (coda.south) |- (p2) |- (thread.west);
+      \draw [freccia] (thread) -- (cho);
+      \draw [freccia] (cho) |- (keyeng);
+      \draw [freccia] (cho) |- (coeng);
+
+      \draw [dfreccia] (keyeng) -- (chuspli);
+      \draw [dfreccia] (keyeng) -- (landet);
+      \draw [freccia] (keyeng) -- (keyman);
+
+      \draw [dfreccia] (coeng) -- (pan);
+      \draw [dfreccia] (pan) -- (ois);
+      \draw [freccia] (coeng) -- (rdf);
+
+      \draw [dfreccia] (keyeng.east) -- (gate);
+      \draw [dfreccia] (coeng.east) -- (gate);
+
+      \draw [nfreccia] (p3) -- (p4);
+      \draw [nfreccia] (p4) -- (p5);
+      \draw [freccia] (p5) -- (gate);
+      \draw [freccia] (p3) -- (landet);
+      \draw [freccia] (p3) -| (chuspli);
+
+      \draw [nfreccia] (p6) -- (p7);
+      \draw [nfreccia] (p7) -- (p8);
+      \draw [freccia] (p6) -- (pan);
+      \draw [freccia] (p8) -- (gate);
+    \end{tikzpicture}
+  \end{center}
+  \caption{Schema delle chiamate per le fasi di \emph{crawling}}
+  \label{fig:chiamatecrawl}
+\end{figure}
+\`e possibile vedere tale flusso di chiamate. Ogni blocco \`e
+associato ad una classe, la scelta dei nomi in inglese per questi \`e dettata dalla
+somiglianza con i nomi delle classi che li implementano. Il colore
+differenzia i processi principali da quelli di supporto, inoltre sono
+evidenziati anche i processi che creano l'output per le due fasi di
+\emph{crawling}.
+
+La corrispondenza dei blocchi con le classi \`e la
+seguente\footnote{Vedere la sezione \ref{sec:classi} per i dettagli
+  sulle classi.}:
+\begin{description}
+  \item[gestore comandi] \`e implementato da
+    \java{OSIM\_RequestKBCommand}, come gi\`a visto nella sezione
+    \ref{sec:analisijsp};
+  \item[coda processi] \`e implementata da \java{ProcessQueue} e le
+    relative classi del pacchetto \java{ProcessQueuing}, la coda dei
+    processi \`e spiegata nel dettaglio in sezione
+    \ref{sec:codaprocessi};
+  \item[thread] \`e implementato dalla classe
+    \java{CompetenceKeyCrawler};
+  \item[keyword engine] \`e implementato dalla classe
+    \java{KeywordExtractionEngine};
+  \item[competence engine] \`e implementato dalla classe\\
+    \java{CompetenceExtractionEngine};
+  \item[chunk splitter] \`e implementato dalla classe
+    \java{ChunkSplitter};
+  \item[language detector] \`e implementato dalla classe
+    \java{LanguageDetector};
+  \item[keyword manager] \`e implementato dalla classe
+    \java{OSIM\_KeywordManager};
+  \item[person analyzer] \`e implementato dalla classe
+    \java{PersonAnalyzer};
+  \item[RDF serializer] \`e implementato dalla classe
+    \java{OSIM\_RdfSerializer};
+  \item[gate] \`e implementato dalla classe \java{StandAloneAnnie}.
+\end{description}
+
+La coda si occupa di far si che solo un thread di \emph{crawling} sia
+attivo in ogni istante, questo perch\'e tali processi sono molto
+onerosi.
+
+Il \emph{thread} si occupa di interrogare il tipo di operazione
+richiesta, se \`e richiesto il \emph{crawling} di \emph{keyword}
+allora crea un nuovo \java{KeywordExtractionEngine} e lancia il suo
+metodo \java{extractKey}. Se \`e richiesto un \emph{crawling} di
+competenze istanzia \java{CompetenceExtractionEngine} e lancia il suo
+metodo \java{run}\footnote{Vedere la sezione \ref{sec:classi}
+  per i dettagli sulle classi.}.
+
+Completata l'esecuzione di uno dei due processi, il \emph{thread}
+notifica la coda del completamento cos\`i che questa lanci il
+successivo \emph{thread}.
+
+Il \emph{keyword engine} usa le classi per:
+\begin{enumerate}
+\item \java{ChunkSplitter} per estrarre le frasi dalle pagine del
+  dipartimento e salvarle nei \emph{file} temporanei;
+\item \java{LanguageDetector} per riconoscere la lingua di questi
+  \emph{file} e accodarli ai tre \emph{file} delle frasi in lingua
+  italiana, inglese o sconosciuta;
+\item \java{StandAloneAnnie} per estrarre i sostantivi dai due
+  \emph{file} di frasi in lingua italiana e inglese;
+\item \java{KeywordManager} per salvare i sostantivi estratti nel
+  database.
+\end{enumerate}
+A sua volta \java{ChunckSplitter} e \java{LanguageDetector} fanno uso di\\
+\java{StandAloneAnnie}.
+
+Il \emph{competence engine} usa il metodo \java{analyze} di
+\java{PersonAnalyzer} per analizzare ogni persona del
+dipartimento e ricavare degli oggetti di tipo
+\java{UnifiOntologyIstance} da passare alla classe
+\java{OSIM\_RdfSerializer} che interpreta tali oggetti e scrive le
+triple corrispondenti nell'\emph{RDF store}.
+
+\java{CompetenceExtractionEngine} si affida a \java{StandAloneAnnie}
+per estrarre dalle pagine le competenze e la struttura di ogni persona.
+
+In figura \ref{fig:schemaTemp} \`e possibile vedere uno schema
+temporale delle chiamate che avvengono quando l'esperto decide di
+mettere in coda una fase di \emph{crawling}.
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}[auto]
+      \matrix[row sep = 0.5cm, column sep = 0.25cm] {
+        %0
+        \node[tempLab] {Pagina}; &
+        \node[tempLab] {Servlet}; &
+        \node[tempLab] {Gestore}; &
+        \node[tempLab] {Coda}; &
+        \node[tempLab] {Thread}; &
+        \node[tempLab] {Engine}; \\
+      
+        %1
+        \node[point] (Pi) {}; &
+        \node[point] (Si) {}; &
+        \node[point] (Gi) {}; &
+        \node[point] (Ci) {}; &
+        \node[point] (Ti) {}; &
+        \node[point] (Ei) {}; \\
+
+        %2
+        \node[point] (P2) {}; & & & & & \\
+
+        %3
+        & \node[point] (S3) {}; & & & & \\
+
+        %4
+        & & \node[point] (G4) {}; & & & \\
+
+        %5
+        & & & \node[point] (C5) {};& & \\
+
+        %6
+        & & & \node[point] (C6) {};& & \\
+
+        %7
+        & & \node[point] (G7) {};& & & \\
+
+        %8
+        & \node[point] (S8) {};& & \node[point] (C8) {};& & \\
+
+        %9
+        \node[point] (P9) {};& & & & \node[point] (T9) {};& \\
+
+        %10
+        & & & & & \node[point] (E10) {};\\
+
+        %11
+        & & & & & \node[point] (E11) {};\\
+
+        %12
+        & & & &\node[point] (T12) {}; & \\
+
+        %13
+        & & & \node[point] (C13) {};& & \\
+
+        %14
+        \node[point] (Pe) {}; &
+        \node[point] (Se) {}; &
+        \node[point] (Ge) {}; &
+        \node[point] (Ce) {}; &
+        \node[point] (Te) {}; &
+        \node[point] (Ee) {}; \\
+      };
+
+      %verticali
+      \draw [tempLine] (Pi) -- (Pe);
+      \draw [tempLine] (Si) -- (Se);
+      \draw [tempLine] (Gi) -- (Ge);
+      \draw [tempLine] (Ci) -- (C6);
+      \draw [tempTLine] (C6) -- (C8);
+      \draw [tempLine] (C8) -- (Ce);
+      \draw [tempLine] (Ti) -- (Te);
+      \draw [tempLine] (Ei) -- (Ee);
+
+      %verticali proc
+      \draw [tempLineProc] (P2) -- (P9);
+      \draw [tempLineProc] (S3) -- (S8);
+      \draw [tempLineProc] (G4) -- (G7);
+      \draw [tempLineProc] (C5) -- (C6);
+
+      \draw [tempLineProc] (T9) -- (T12);
+      \draw [tempLineProc] (E10) -- (E11);
+
+      %frecce
+      \draw[freccia] (P2) to node[labelg]{\codg{executeRequest}} (S3);
+      \draw[freccia] (S3) to node[labelg]{\codg{execute}} (G4);
+      \draw[freccia] (G4) to node[labelg]{\codg{newProcess}} (C5);
+      \draw[freccia] (C6) to node[labelg]{\dimg Messaggio} (G7);
+      \draw[freccia] (G7) to node[labelg]{\dimg Messaggio} (S8);
+      \draw[freccia] (S8) to node[labelg]{\dimg Messaggio} (P9);
+
+      \draw[freccia] (C8) to node[labelg]{\codg{run}} (T9);
+      \draw[freccia] (T9) to node[labelg]{\codg{run}} (E10);
+      \draw[freccia] (E11) -- (T12);
+      \draw[freccia] (T12) to node[labelg]{\codg{notify}} (C13);
+
+    \end{tikzpicture}
+  \end{center}
+  \caption{Schema temporale delle chiamate di \emph{crawling}}
+  \label{fig:schemaTemp}
+\end{figure}
+Dalla pagina viene chiamata la servlet, che passa la chiamata al
+gestore del comando di \emph{crawling}, che inserisce un nuovo
+processo in coda. Viene passato indietro alla pagina un messaggio di
+avvenuto inserimento nella coda. Quando \`e il turno del processo
+accodato, viene lanciato un \emph{thread} che sfrutta il corretto
+\emph{engine} per svolgere le operazioni di \emph{crawling}. La coda
+nel frattempo rimane libera di gestire l'accodamento di altri
+processi. Quando l'operazione di \emph{crawling} conclude, il
+\emph{thread} notifica  la coda e poi termina. La coda pu\`o quindi
+lanciare il successivo processo.
+
+\subsection{Dettagli della coda dei processi}\label{sec:codaprocessi}
+I processi di \emph{crawling}, sia di \emph{keyword} che di
+competenze, non vengono eseguiti immediatamente appena l'utente clicca
+sul relativo pulsante. Le richieste vengono messe in attesa in una
+apposita coda dei processi, ed ogni volta che un processo termina (o
+nel caso in cui sia vuota) viene lanciato il successivo processo in attesa.
+
+Questa coda \`e unica in tutto il sistema, nel senso che \`e condivisa
+tra tutti i dipartimenti, e il suo scopo \`e avviare pi\`u processi di
+dipartimenti diversi, nello stesso momento. La coda gestisce la loro
+mutua esecuzione in
+quanto sono processi molto onerosi in termini di risorse.
+
+Questa coda \`e implementata dalle classi \java{ProcessQueue},
+\java{ProcessTable}, e \java{ProcessTableRow}\footnote{Vedere la
+  sezione \ref{sec:classi} per la descrizione dettagliata di queste
+  classi.}. La coda fornisce un metodo \java{newProcess} da richiamare
+all'atto di aggiungere una nuova chiamata di \emph{crawling}, questo
+metodo ha come parametro un oggetto di tipo \java{HttpServletRequest}
+da dove preleva tutti i parametri necessari per l'esecuzione del
+processo, come il dipartimento da dove \`e stato lanciato e il tipo di
+operazione. Con questi parametri crea un oggetto di tipo
+\java{ProcessTableRow} e lo accoda a \java{ProcessTable}.
+
+\java{ProcessTable} implementa una coda \emph{fifo} con l'aggiunta di
+una coda per i processi gi\`a conclusi (che vengono visualizzati per
+riepilogo nel pannello di amministrazione dei dipartimenti), ossia
+implementano uno schema come quello di figura \ref{fig:codaprocessi}.
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}
+      \node [coda=4] (pass) {\nodepart{two}$\cdots$\nodepart{three}Processo\nodepart{four}Processo};
+      \node [coda=1, below = 0.5cm of pass] (pres) {Processo};
+      \node [coda=4, below = 0.5cm of pres] (fut)  {Processo\nodepart{two}Processo\nodepart{three}$\cdots$\nodepart{four}};
+
+      \node [label, below left = 0.5cm and 2cm of fut] (ins) {Inserisce};
+      \node [label, left = 2cm of pres] (eseg) {Esegue};
+
+      \node [label, right = 1cm of pass] {\large Processi conclusi};
+      \node [label, right = 1cm of pres] {\large Processo in esecuzione};
+      \node [label, right = 1cm of fut] {\large Processi in attesa};
+
+      \draw [freccia] (fut) -- (pres);
+      \draw [freccia] (pres) -- (pass);
+      \draw [freccia] (pres) -- (eseg);
+      \draw [freccia] (ins) -| (fut);
+    \end{tikzpicture}
+  \end{center}
+  \caption{Schema della coda dei processi}
+  \label{fig:codaprocessi}
+\end{figure}
+I processi vengono inseriti in fondo alla coda dei processi in attesa. Quando
+un processo termina, viene inserito nei processi conclusi ed il primo
+processo in attesa passa in esecuzione. La
+classe \java{ProcessQueue} implementa \java{Observer} e viene
+notificata quando un processo termina, poich\'e tali processi sono
+implementati con dei \emph{thread} di classe
+\java{CompetenceKeyCrawler}.
+
+\section{Pagine \emph{JSP}}\label{sec:paginejsp}
+L'applicazione presenta tre pagine \emph{JSP}:
+\begin{itemize}
+\item \file{login.jsp} che presenta all'utente la pagina con il login;
+\item \file{userPage.jsp} che presenta all'utente la lista dei
+  dipartimenti con le loro statistiche e i pulsanti per accedere al
+  pannello di amministrazione di ogni dipartimento;
+\item \file{index.jsp} che presenta la pagina del pannello di
+  amministrazione di un singolo dipartimento.
+\end{itemize}
+
+Queste pagine sono scritte in \emph{JSP} ossia sono delle pagine in
+\emph{HTML} integrate da pezzi di codice \emph{Java} che vengono
+elaborati da \emph{Tomcat} prima di visualizzarli all'utente.
+
+Il sito \`e dinamico, \`e presente una iterazione con l'utente. Questa
+iterazione \`e realizzata tramite chiamate da \emph{Javascript} con il
+sistema indicato nella sezione \ref{sec:analisijsp}.
+
+Le pagine ogni secondo lanciano una serie di queste chiamate
+\emph{HTTP} per controllare se esistono aggiornamenti alla
+visualizzazione. 
+
+\subsection{Pagina \file{userPage.jsp}}
+La pagina, visibile in figura \ref{fig:listadipartimenti} a pagina
+\pageref{fig:listadipartimenti}, presenta una lista di dipartimenti creata dinamicamente
+leggendo la tabella \sql{departments} dal database. Inoltre accanto ad
+ogni dipartimento viene visualizzata una lista di statistiche reperita
+dalla tabella \sql{departments\_status}.
+
+A seconda dei privilegi che ha l'utente connesso, specificati nella tabella \sql{authorization}, vengono o meno
+presentati due \emph{link} accanto ai dipartimenti:
+\begin{description}
+\item[leggi] per entrare nel pannello di amministrazione di tale
+  dipartimento in modalit\`a di sola visualizzazione;
+\item[amministra] per entrare sempre nel solito pannello di
+  amministrazione, per\`o con la possibilit\`a di modifica.
+\end{description}
+
+Entrambi i \emph{link} portano alla pagina \file{index.jsp}, usando
+parametri diversi.
+
+Questa pagina presenta in fondo alla lista dei dipartimenti anche una
+replica della tabella dei processi completati, in corso, e in coda
+ricavata interrogando la classe \java{ProcessQueue}.
+
+\subsection{Pagina \file{index.jsp}}
+La pagina \file{index.jsp} visibile nelle figure
+\ref{fig:pannelloamministrazione1} e
+\ref{fig:pannelloamministrazione2} da pagina
+\pageref{fig:pannelloamministrazione1}, \`e la pagina principale
+dell'applicazione. Essa mostra il pannello di amministrazione di un
+dipartimento che a
+seconda dei parametri pu\`o essere solo in visualizzazione o
+completo. In modalit\`a visualizzazione \`e possibile solo vedere
+lo \emph{SKOS} delle competenze e l'elenco delle \emph{keyword}, ma
+non \`e possibile apportare modifiche.
+
+La pagina del pannello di amministrazione \`e aggiornata interamente
+tramite chiamate \emph{HTTP} da \emph{Javascript}. Uno degli script
+\`e richiamato ogni secondo e serve per aggiornare la lista dei
+processi in basso a destra e per prelevare eventuali messaggi di
+\emph{log}.
+
+Per il suo layout la pagina usa \emph{JQuery UI Layout}.
+
+\section{Database}\label{sec:database}
+Il database usato si chiama \sql{ieateneo}, e le tabelle principali
+sono descritte nei seguenti paragrafi.
+
+\subsection{Tabella \sql{departments}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [sqltable=5]{\sqlt{departments}\nodepart{two}\sqli{store:varchar}\nodepart{three}\sqli{url:varchar}\nodepart{four}\sqli{description:varchar}\nodepart{five}\sqli{keywordTable:varchar}};};
+  \end{tikzpicture}
+\end{center}
+\`E la tabella di indice per tutti i dipartimenti, contiene un campo
+stringa \sql{store} che \`e la chiave rappresentativa di un certo
+dipartimento, la stessa usata in altre tabelle, e anche come parametro
+all'interno delle chiamate dei metodi nel codice. Il campo \sql{url} rappresenta l'url iniziale da cui far partire
+il \emph{crawling} delle \emph{keyword} dei differenti
+dipartimenti. Il campo \sql{description} \`e la descrizione del
+dipartimento (ad esempio ``dipartimento di sistemi e informatica'').
+Infine il campo \sql{keywordTable} \`e il nome della tabella delle
+\emph{keyword} risultanti dal completamento della fase di
+\emph{crawling} delle \emph{keyword} di un certo
+dipartimento.
+
+\subsection{Tabella \sql{keyword\_*}}\label{sec:tabkeyword}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [sqltable=7]{\sqlt{keyword\_*}\nodepart{two}\sqli{id:int}\nodepart{three}\sqli{en\_value:varchar}\nodepart{four}\sqli{it\_value:varchar}\nodepart{five}\sqli{frequencies:int}\nodepart{six}\sqli{staus:char}\nodepart{seven}\sqli{type:varchar}};};
+  \end{tikzpicture}
+\end{center}
+\`E la tabella dove vengono memorizzate le \emph{keyword} che vengono
+estratte nella prima fase di \emph{crawling} delle \emph{keyword}. Ci
+sono tante tabelle di questo tipo quanti sono i dipartimenti, e il
+loro nome \`e costituito da \sql{keyword\_} seguito da un suffisso
+specifico per ogni dipartimento. L'elenco di tali nomi e il
+dipartimento a cui queste tabelle sono associate, si trovano nella
+tabella \sql{departments}.
+
+I campi di questa tabella sono: \sql{id} che \`e un intero progressivo
+che funge da chiave primaria per la tabella; \sql{en\_value} e
+\sql{it\_value} che sono i valori della \emph{keyword} nelle due lingue
+attualmente disponibili; \sql{frequencies} che indica  il numero
+di occorrenze della \emph{keyword} in questione all'interno delle
+pagine del dipartimento; \sql{status} \`e lo stato della
+\emph{keyword} che \`e un carattere che pu\`o essere \sql{0} quello di
+default, \sql{1} se l'esperto ha scelto di inserire tale
+\emph{keyword} nel \emph{gazetteer} per la seconda fase di
+\emph{crawling} delle competenze, \sql{2} se l'esperto ha inserito
+la \emph{keyword} in \emph{black list}; infine \sql{type} indica il
+tipo di \emph{keyword} estratta, questo valore attualmente \`e sempre \sql{noun}, ma
+\`e prevista in futuro l'implementazione dell'estrazione dei
+predicati.
+
+\subsection{Tabella \sql{user}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [sqltable=4]{\sqlt{user}\nodepart{two}\sqli{user:varchar}\nodepart{three}\sqli{mail:varchar}\nodepart{four}\sqli{password:varchar}};};
+  \end{tikzpicture}
+\end{center}
+Si tratta della tabella dei possibili utenti che possono fare
+\emph{login} nell'applicazione. Nel campo \sql{password} la stringa
+\`e codificata con il proprio \emph{hash}.
+
+\subsection{Tabella \sql{authorization}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [sqltable=5]{\sqlt{authorization}\nodepart{two}\sqli{id:int}\nodepart{three}\sqli{store:varchar}\nodepart{four}\sqli{related\_user:varchar}\nodepart{five}\sqli{type:char}};};
+  \end{tikzpicture}
+\end{center}
+Assieme alla tabella \sql{user} definisce chi ha i privilegi di
+amministrazione e per quali dipartimenti. Infatti ogni riga \`e
+composta da un \sql{id} che serve da chiave primaria univoca, uno
+\sql{store} che corrisponde ad uno degli \sql{store} della tabella
+\sql{departments} dei dipartimenti, \sql{related\_user} corrisponde ad
+uno \sql{user} della tabella \sql{user} degli utenti, e \sql{type} \`e
+il tipo di permesso associato al corrispondente utente per il
+corrispondente dipartimento. Il tipo di permesso \sql{type} \`e un
+carattere che pu\`o essere uguale ad \sql{a} se ha il permesso di
+accedere in amministrazione totale, \sql{b} in amministrazione
+parziale, \sql{c} in sola lettura.
+
+\subsection{Tabella \sql{recovery\_queue}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [sqltable=4]{\sqlt{recovery\_queue}\nodepart{two}\sqli{timestamp:bigint}\nodepart{three}\sqli{store\_name:varchar}\nodepart{four}\sqli{op\_type:varchar}};};
+  \end{tikzpicture}
+\end{center}
+Questa tabella memorizza i processi che sono messi in coda, quelli che
+possono essere visionati nel riquadro in basso a destra del pannello
+di amministrazione di un dipartimento. Il campo
+\sql{timestamp} \`e il \emph{timestamp}\footnote{Il
+  \emph{timestamp} usato da \emph{Java}, ossia il numero di
+  millisecondi trascorsi dalla mezzanotte del primo gennaio del 1970.}
+di quando \`e stato lanciato un processo,
+\sql{store\_name} \`e il nome dello \emph{store}\footnote{lo stesso indicato
+nella tabella \sql{departments}.}, \sql{op\_type} indica se il processo
+\`e un \emph{crawling} di \emph{keyword} o di competenze. Il suo
+valore pu\`o essere \sql{keyExtraction} o \sql{competenceExtraction}.
+
+Con questa tabella \`e possibile ripristinare i processi che
+l'amministratore aveva messo in coda nel caso in cui si verifichi un
+\emph{crash} dell'applicazione.
+
+\subsection{Tabella \sql{departments\_status}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [sqltable=8]{\sqlt{departments\_status}\nodepart{two}\sqli{department\_id:varchar}\nodepart{three}\sqli{kw\_extract\_phase:varchar}\nodepart{four}\sqli{comp\_extract\_phase:varchar}\nodepart{five}\sqli{n\_person:varchar}\nodepart{six}\sqli{n\_doc:varchar}\nodepart{seven}\sqli{status\_kw\_phase:varchar}\nodepart{eight}\sqli{status\_comp\_phase:varchar}};};
+  \end{tikzpicture}
+\end{center}
+In questa tabella sono memorizzate tutte le informazioni visibili
+nelle statistiche di riepilogo nella pagina della lista dei
+dipartimenti. Il campo \sql{department\_id} \`e il nome del
+dipartimento\footnote{come nel campo \sql{store} della tabella
+\emph{departments}.}. \sql{kw\_extract\_phase} indica la data e l'ora in
+formato testuale dell'ultima esecuzione della fase di \emph{crawling}
+delle \emph{keyword}. \sql{comp\_extract\_phase} indica la stessa informazione per la fase di
+\emph{crawling} delle competenze. \sql{n\_person} indica in formato
+testuale il numero di persone per cui e stato fatto il \emph{crawling}
+e il numero totale di persone (per vedere per quante persone \`e
+fallito il \emph{crawling}). \sql{n\_doc} indica il numero di pagine
+del dipartimento che il \emph{crawler} ha processato durante la sua ultima
+esecuzione. \sql{status\_kw\_phase} e \sql{status\_comp\_phase} indica lo
+stato attuale del processo delle due fasi di \emph{crawling}: pu\`o
+essere \sql{idle} se non \`e n\'e in esecuzione \'e in coda,
+\sql{running} se \`e in esecuzione, \sql{pending} se \`e in coda.
+
+\subsection{Tabella \sql{carriera}}\label{sec:tabellacarriera}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [sqltable=5]{\sqlt{carriera}\nodepart{two}\sqli{cognome:varchar}\nodepart{three}\sqli{nome:varchar}\nodepart{four}$\cdots$\nodepart{five}\sqli{cf\_md5:varchar}};};
+  \end{tikzpicture}
+\end{center}
+Questa \`e una tabella di servizio che viene usata durante la seconda
+fase di \emph{crawling} delle competenze per ricavare l'\emph{hash md5} del codice fiscale, di ogni persona da
+usare come \emph{URI} per l'entit\`a della persona
+nell'\emph{RDF}. Contiene molti campi che per lo scopo del
+\emph{crawler} non vengono usati. Quelli usati sono: \sql{cognome} che
+contiene 
+il cognome della persona, \sql{nome} il nome della persona, e
+\sql{cf\_md5} l'\emph{hash md5} del codice fiscale di tale persona.
+
+\section{Classi principali}\label{sec:classi}
+In questa sezione vengono presentate in breve le principali classi usate dall'applicazione. La lista
+degli attributi e dei metodi non \`e esaustiva ma cerca di coprire
+solo ci\`o che \`e maggiormente significativo per la comprensione del
+codice.
+
+Le classi principali del crawler riguardano tutte il progetto
+\java{skosServlet}, inoltre la lista di queste viene presentata divisa
+per \emph{package} (in seguito pacchetto).
+
+\subsection{Pacchetto \java{SkosServlet}}
+\`E il pacchetto della \emph{servlet}, il punto di accesso a tutto il
+resto del codice.
+
+\subsubsection{Classe \java{OSIM\_SkosServlet}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=5]{
+        \javat{OSIM\_SkosServlet :: HttpServlet : Observer}
+        \nodepart{two}\javai{doGet(request : HttpServletRequest, response : HttpServletResponse)}
+        \nodepart{three}\javai{doPost(request : HttpServletRequest, response : HttpServletResponse)}
+        \nodepart{four}\javai{executeRequest(request :HttpServletRequest, response :HttpServletResponse)}
+        \nodepart{five}\javai{parseResponse(currentState : JSONObject, response : HttpServletResponse)}
+      };};
+  \end{tikzpicture}
+\end{center}
+\`E la classe principale della \emph{servlet}, i suoi metodi
+\java{doGet} e \java{doPost} rispondono alle chiamate \emph{HTTP} che
+vengono effettuate dalle pagine
+\emph{JSP} che devono fare qualche richiesta
+all'\emph{servlet}. Entrambi questi metodi passano la chiamata al
+metodo \java{executeRequest} senza fare altro. Quest'ultimo metodo ha
+due unici parametri:
+\begin{itemize}
+\item \java{request} di tipo \java{HttpServletRequest} che \`e
+  l'oggetto che racchiude tutte le informazioni della chiamata
+  \emph{http} che \`e stata fatta dal \emph{Javascript} delle
+  \emph{JSP}. Da questo parametro vengono estratti tutti i campi della
+  \emph{query}, soprattutto \java{operation} che \`e il nome
+  dell'operazione richiesta dalla pagina;
+\item \java{response} di tipo \java{HttpServletResponse} serve per
+  poter passare il valore di ritorno della chiamata,
+  formattato come una risposta \emph{HTTP}.
+\end{itemize}
+
+\java{ExecuteRequest} ricava \java{operation} da \java{request}, usa la classe\\
+ \java{OSIM\_CommandFactory} per ricavare il giusto gestore di
+comandi di tipo \java{OSIM\_RequestCommand} e richiama il metodo
+\java{run} su tale gestore che ritorna una risposta in formato
+\java{JSONObject}.
+
+Per ritornare un valore nella forma richiesta, ossia tramite
+\java{response}, viene invocato il metodo{parseResponse} che usa
+il \emph{JSON} dell'esecuzione del gestore comandi, e il
+\java{response} che gli viene passato assieme, per scrivere una
+risposta in base al valore del \java{JSONObject}.
+
+\subsubsection{Classe \java{OSIM\_CommandFactory}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=9, rectangle split part fill={umlTit, umlAtt, umlAtt, umlAtt, umlAtt, umlAtt, umlAtt, umlMet}]{
+        \javat{OSIM\_CommandFactory}
+        \nodepart{two}\javai{factory : OSIM\_CommandFactory}
+        \nodepart{three}\javai{instanceCommand : ArrayList<String>}
+        \nodepart{four}\javai{keywordCommand : ArrayList<String>}
+        \nodepart{five}\javai{osimCommand : ArrayList<String>}
+        \nodepart{six}\javai{searchCommand : ArrayList<String>}
+        \nodepart{seven}\javai{skosCommand : ArrayList<String>}
+        \nodepart{eight}\javai{getFactory() : OSIM\_CommandFactory}
+        \nodepart{nine}\javai{create(operationType : String) : OSIM\_RequestCommand}
+      };};
+  \end{tikzpicture}
+\end{center}
+Si tratta di un \emph{singleton} che viene richiamato da
+\java{OSIM\_SkosServlet} per creare il giusto tipo di gestore delle
+chiamate \emph{HTTP}. Tali gestori sono tutti ereditati da
+\java{OSIM\_RequestCommand}.
+
+La classe presenta un attributo \java{factory} che \`e l'istanza del
+\emph{singleton} restituita dal metodo \java{getFactory}. Oltre a
+questo ha una serie di vettori di stringhe definiti staticamente
+contenenti ognuno tipi di operazioni possibili, in base a questi
+vettori il metodo \java{create} istanzia il giusto gestore in base al
+tipo di operazione passato e ritorna tale oggetto.
+
+\subsubsection{Classe \java{OSIM\_RequestCommand}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=2]{
+        \javat{OSIM\_RequestCommand}
+        \nodepart{two}\javai{execute(request : HttpServletRequest) : JSONObject}
+      };};
+  \end{tikzpicture}
+\end{center}
+\`E una \emph{interfaccia} che viene implementata da tutte le classi
+che descrivono i gestori delle chiamate. L'unico metodo \java{execute}
+identifica l'esecuzione di una chiamata, prevede come parametro la
+richiesta \emph{HTTP} e come valore di ritorno un oggetto
+\emph{JSON}.
+
+\subsubsection{Classe \java{OSIM\_RequestKBCommand}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=13, rectangle split part fill={umlTit, umlAtt, umlMet}]{
+        \javat{OSIM\_RequestKBCommand :: OSIM\_RequestCommand}
+        \nodepart{two}\javai{messenger : Messenger}
+        \nodepart{three}\javai{execute(request : HttpServletRequest) : JSONObject}
+        \nodepart{four}\javai{runTranslateKey(request : HttpServletRequest) : JSONObject}
+        \nodepart{five}\javai{runTranslateCrawl(request : HttpServletRequest) : JSONObject}
+        \nodepart{six}\javai{runGetTranslateKeyCount(request : HttpServletRequest) : JSONObject}
+        \nodepart{seven}\javai{runGetTranslateCrawlCount(request : HttpServletRequest) : JSONObject}
+        \nodepart{eight}\javai{getNextMessage(request : HttpServletRequest) : JSONObject}
+        \nodepart{nine}\javai{getProcessTable(request : HttpServletRequest) : JSONObject}
+        \nodepart{ten}\javai{dumpStore(request : HttpServletRequest) : JSONObject}
+        \nodepart{eleven}\javai{runGetKeysRemover(request : HttpServletRequest) : JSONObject}
+        \nodepart{twelve}\javai{runStopWordsFilter(request : HttpServletRequest) : JSONObject}
+        \nodepart{thirteen}\javai{runSKOSCleaner(request : HttpServletRequest) : JSONObject}
+      };};
+  \end{tikzpicture}
+\end{center}
+\`E la classe del gestore delle chiamate dei pulsanti del pannello di
+controllo di un dipartimento, quelli di figura \ref{fig:bottoni} a
+pagina \pageref{fig:bottoni}, e per il prelievo di messaggi per il
+\emph{log} e per il prelievo della tabella dei processi. Il metodo \java{execute} controlla quale
+\`e il tipo di operazione richiesta e a seconda del quale lancia uno
+dei corrispondenti metodi:
+\begin{itemize}
+\item \java{dumpStore} per il \emph{download} dell'\emph{RDF}; 
+\item \java{runTranslateKey} per il lancio della traduzione delle
+  \emph{keyword} non tradotte;
+\item \java{runTranslateCrawl} per il lancio della traduzione delle
+  competenze non tradotte;
+\item \java{runGetTranslateKeyCount} per ottenere il numero di
+  \emph{keyword} non tradotte visualizzato sotto il pulsante della
+  traduzione;
+\item \java{runGetTranslateKeyCrawl} per ottenere il numero di
+  competenze non tradotte visualizzato sotto il pulsante della
+  traduzione;
+\item \java{runKeysRemover} per il lancio della rimozione delle
+  keyword non gi\`a nel \emph{gazetteer};
+\item \java{runStopWordsFilter} per il lancio della rimozione delle
+  \emph{stop words} dal \emph{gazetteer};
+\item \java{runSKOSCleaner} per il lancio della pulizia
+  dell'\emph{RDF};
+\item \java{getNextMessage} per ottenere il prossimo messaggio del
+  log;
+\item \java{getProcessTable} per ottenere la tabella dei processi in
+  esecuzione, in attesa, ed eseguiti.
+\end{itemize}
+
+L'attributo \java{messenger} \`e un riferimento al
+\emph{singleton} che si occupa di gestire i messaggi del log.
+
+Ci sono altre operazioni che vengono gestite all'interno del
+metodo \java{execute}:
+\begin{itemize}
+\item il lancio del \emph{crawler} di \emph{keyword}, viene accodato un
+  processo al gestore della coda \java{ProcessQueue}\footnote{Vedere
+    il funzionamento della coda in sezione \ref{sec:codaprocessi}.};
+\item il lancio del \emph{crawler} delle competenze, come il
+  precedente viene accodato un processo;
+\item la cancellazione di un processo in coda, o la pulizia della visualizzazione di un
+  processo completato, viene richiamato il metodo \java{deleteProcess}
+  della classe \java{ProcessQueue}.
+\end{itemize}
+
+\subsubsection{Classe \java{OSIM\_KeywordRequestCommand}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=9, rectangle split part fill={umlTit, umlAtt, umlAtt, umlMet}]{
+        \javat{OSIM\_KeywordRequestCommand :: OSIM\_RequestCommand}
+        \nodepart{two}\javai{keywordManager : OSIM\_KeywordManager}
+        \nodepart{three}\javai{maxRowsForPage : int}
+        \nodepart{four}\javai{execute(request : HttpServletRequest) : JSONObject}
+        \nodepart{five}\javai{getTablePage(request : HttpServletRequest) : JSONObject}
+        \nodepart{six}\javai{submit(request : HttpServletRequest) : JSONObject}
+        \nodepart{seven}\javai{countTotalPage(request : HttpServletRequest) : String}
+        \nodepart{eight}\javai{getKeyTableName(store : String) : String}
+        \nodepart{nine}\javai{getflipLanguageCB(lang : String) : String}
+      };};
+  \end{tikzpicture}
+\end{center}
+\`E il gestore delle operazioni collegate con la tabella delle
+\emph{keyword} visibile nella figura
+\ref{fig:pannelloamministrazione2} a pagina
+\pageref{fig:pannelloamministrazione2}.
+Il suo \java{execute} e i suoi metodi si occupano di gestire tutte le
+operazioni di visualizzazione della tabella, cambio pagina,
+aggiornamento della tabella, cambio lingua di una riga.
+
+\subsubsection{Classe \java{OSIM\_SkosRequestCommand}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=14, rectangle split part fill={umlTit, umlAtt, umlMet}]{
+        \javat{OSIM\_SkosRequestCommand :: OSIM\_RequestCommand}
+        \nodepart{two}\javai{skosManager : OSIM\_SkosManager}
+        \nodepart{three}\javai{execute(request : HttpServletRequest) : JSONObject}
+        \nodepart{four}\javai{addAlternativeLabel(request : HttpServletRequest) : JSONObject}
+        \nodepart{five}\javai{createNode(request : HttpServletRequest) : JSONObject}
+        \nodepart{six}\javai{getSkosChildren(request : HttpServletRequest) : JSONObject}
+        \nodepart{seven}\javai{loadConcept(request : HttpServletRequest) : String}
+        \nodepart{eight}\javai{moveNode(request : HttpServletRequest) : String}
+        \nodepart{nine}\javai{removeNode(request : HttpServletRequest) : String}
+        \nodepart{ten}\javai{renameNode(request : HttpServletRequest) : String}
+        \nodepart{eleven}\javai{saveConcept(request : HttpServletRequest) : String}
+        \nodepart{twelve}\javai{searchNode(request : HttpServletRequest) : String}
+        \nodepart{thirteen}\javai{searchNodeByUri(request : HttpServletRequest) : String}
+        \nodepart{fourteen}\javai{translate(request : HttpServletRequest) : String}
+      };};
+  \end{tikzpicture}
+\end{center}
+\`E il gestore delle operazioni collegate con lo \emph{Skos} visibile nella figura
+\ref{fig:pannelloamministrazione1} a pagina
+\pageref{fig:pannelloamministrazione1}. Questa classe gestisce tutte le
+operazioni di gestione dello \emph{Skos}, a partire dalla
+visualizzazione, alle operazioni di modifica come la creazione di
+gerarchie tra competenze, oppure
+la creazione di nuovi concetti.
+
+\subsection{Pacchetto \java{ProcessQueuing}}
+Le classi di questo pacchetto si occupano di gestire la coda dei
+processi di \emph{crawling}, sia delle \emph{keyword} che delle
+competenze. Queste due operazioni non vengono gestite immediatamente
+dal gestore dei comandi, ma questi demanda il compito alle classi di 
+questo pacchetto.
+
+Per la decrizione del funzionamento della coda dei processi,
+riferirsi alla sezione \ref{sec:codaprocessi}.
+
+\subsubsection{Classe \java{processQueue}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=9, rectangle split part fill={umlTit, umlAtt, umlAtt, umlMet}]{
+        \javat{ProcessQueue :: Observer}
+        \nodepart{two}\javai{crawler : CompetenceKeyCrawler}
+        \nodepart{three}\javai{table : ProcessTable}
+        \nodepart{four}\javai{newProcess(request : HttpServletRequest)}
+        \nodepart{five}\javai{launchNextProcess()}
+        \nodepart{six}\javai{update(o : Observable, arg : Object)}
+        \nodepart{seven}\javai{deleteProcess(timestamp : String)}
+        \nodepart{eight}\javai{deleteOldProcessess()}
+        \nodepart{nine}\javai{getProcessTable(loggedUser : String) : String}
+      };};
+  \end{tikzpicture}
+\end{center}
+\`E la classe principale del gestore della coda dei processi, quella
+che si interfaccia all'esterno. \`E
+sviluppata come un \emph{singleton}, e prevede gli attributi:
+\begin{itemize}
+\item \java{crawler} \`e il thread che si occupa di effettuare il
+  \emph{crawling}, questa classe \`e in osservazione su tale
+  \emph{thread} in modo che possa venir notificata quando un processo
+  di \emph{crawling} conclude;
+\item \java{table} \`e l'istanza della classe che effettivamente
+  implementa la coda dei processi.
+\end{itemize}
+I metodi sono:
+\begin{itemize}
+\item \java{newProcess} per poter aggiungere un nuovo processo in
+  coda, come parametro ha direttamente la richiesta \emph{HTTP} dal
+  quale estrae i campi utili;
+\item \java{update} \`e il metodo che viene richiamato quando un
+  \emph{thread} completa la sua esecuzione;
+\item \java{launchNextProcess} si occupa di far scorrere la coda dei
+  processi e lanciare il \emph{thread} di \emph{crawling} sul
+  successivo processo;
+\item \java{deleteProcess} si occupa di eliminare dalla lista il
+  processo che \`e stato inserito nel dato \emph{timestamp} passato,
+  infatti per ogni nuovo processo inserito viene memorizzato anche il
+  \emph{timestamp} con l'obiettivo di poterlo poi cancellare usando
+  tale \emph{timestamp} come chiave;
+\item \java{deleteOldProcesses} elimina dalla lista tutti i processi
+  che sono conclusi. 
+\end{itemize}
+
+Questa classe si occupa anche di mantenere aggiornata la tabella
+\sql{recovery\_queue} dove viene memorizzato lo stato corrente della
+coda per poterlo ripristinare quando necessario.
+
+\subsubsection{Classe \java{ProcessTable}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=10, rectangle split part fill={umlTit, umlAtt, umlAtt, umlAtt, umlMet}]{
+        \javat{ProcessTable}
+        \nodepart{two}\javai{past : LinkedList<ProcessTableRow>}
+        \nodepart{three}\javai{present : ProcessTableRow}
+        \nodepart{four}\javai{past : LinkedList<ProcessTableRow>}
+        \nodepart{five}\javai{put(newValues : ProcessTableRow)}
+        \nodepart{six}\javai{get() : ProcessTableRow}
+        \nodepart{seven}\javai{getAll() : LinkedList<ProcessTableRow>}
+        \nodepart{eight}\javai{step()}
+        \nodepart{nine}\javai{delete(timestamp : String) : ProcessTableRow}
+        \nodepart{ten}\javai{deletePast()}
+      };};
+  \end{tikzpicture}
+\end{center}
+Questa classe implementa fisicamente la coda dei processi; la coda
+viene mantenuta divisa in tre parti, corrispondenti ai tre attributi
+della classe:
+\begin{itemize}
+\item \java{past} \`e una lista di elementi di tipo
+  \java{ProcessTableRow} che sono i processi gi\`a completati;
+\item \java{present} \`e un unico elemento di tipo
+  \java{ProcessTableRow} e rappresenta il processo che attualmente \`e
+  in esecuzione;
+\item \java{future} \`e una lista di elementi dei processi in attesa
+  di essere eseguiti.
+\end{itemize}
+
+I metodi che la classe fornisce sono quelli che vengono richiamati
+dalla \java{ProcessQueue} per svolgere le proprie funzioni. Questi
+sono:
+\begin{itemize}
+\item \java{put} inserisce un metodo in coda alla lista \java{future};
+\item \java{get} ritorna l'elemento attualmente in \java{present}
+  senza modificare niente;
+\item \java{getAll} ritorna una lista costituita dalla concatenazione
+  di \java{past}, \java{present} e \java{future};
+\item \java{step} fa avanzare di un passo le code, sposta
+  \java{present} in testa a \java{past}, e sposta l'elemento in testa
+  a \java{future} in \java{present};\
+\item \java{delete} elimina l'elemento che ha \emph{timestamp} pari a
+  quello passato;
+\item \java{deletePast} svuota la lista \java{past}.
+\end{itemize}
+
+\subsubsection{Classe \java{ProcessTableRow}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=12, rectangle split part fill={umlTit, umlAtt, umlAtt, umlAtt, umlAtt, umlAtt, umlAtt, umlMet}]{
+        \javat{ProcessTable}
+        \nodepart{two}\javai{contextDirectory : String}
+        \nodepart{three}\javai{note : String}
+        \nodepart{four}\javai{operationType : String}
+        \nodepart{five}\javai{state : String}
+        \nodepart{six}\javai{storeName : String}
+        \nodepart{seven}\javai{timestamp : String}
+        \nodepart{eight}\javai{getContextDirectory() : String}
+        \nodepart{nine}\javai{setContextDirectory(newContextDirectory : String)}
+        \nodepart{ten}\javai{getNote() : String}
+        \nodepart{eleven}\javai{setNote(newNote : String)}
+        \nodepart{twelve}$\cdots$
+      };};
+  \end{tikzpicture}
+\end{center}
+\`E la classe che identifica un elemento della tabella dei processi,
+essa ha tutti gli attributi che servono per poter lanciare un
+\emph{thread} di \emph{crawling} e in pi\`u ha l'attributo
+\java{timestamp} per poterlo identificare nell'eliminazione e l'attributo
+\java{state} che indica in che stato \`e tra: in attesa, in
+esecuzione, e eseguito.
+
+\subsection{Pacchetto \java{AteneoCrawler}}
+\`E il pacchetto che contiene la classe che svolge la funzione
+di \emph{thread} per i processi di \emph{crawling} e tutte le classi
+necessarie allo svolgimento della fase di \emph{crawling} delle
+competenze. Contiene inoltre le classi necessarie per interfacciarsi
+con \emph{GATE embedded}.
+
+\subsubsection{Classe \java{CompetenceKeyCrawler}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=12, rectangle split part fill={umlTit, umlAtt, umlAtt, umlAtt, umlAtt, umlAtt, umlAtt, umlMet}]{
+        \javat{CompetenceKeyCrawler :: Observable : Runnable}
+        \nodepart{two}\javai{engine : KeywordExtractionEngine}
+        \nodepart{three}\javai{competenceEngine : CompetenceExtractionEngine}
+        \nodepart{four}\javai{homePage : String}
+        \nodepart{five}\javai{currentDatastore : String}
+        \nodepart{six}\javai{servletTempDir : String}
+        \nodepart{seven}\javai{operationCode : String}
+        \nodepart{eight}\javai{setDatastore(storename : String)}
+        \nodepart{nine}\javai{setContextDirectory(dir : String)}
+        \nodepart{ten}\javai{setOperationMode(code : int)}
+        \nodepart{eleven}\javai{run()}
+        \nodepart{twelve}\javai{getStatus() : String}
+      };};
+  \end{tikzpicture}
+\end{center}
+Questa classe implementa il \emph{thread} principale che viene
+lanciato al momento dell'esecuzione di una fase di
+\emph{crawling}. Viene usato questo \emph{thread} per entrambe le
+fasi, quella delle \emph{keyword} e quella delle competenze;
+l'attributo \java{operationCode} da settare con il metodo
+\java{setOperationMode} serve proprio ad indicare il tipo di
+\emph{crawling} che deve fare al momento dell'esecuzione.
+
+Gli attributi \java{homePage}, \java{currentDatastore},
+\java{servletTempDir}, e i metodi che li modificano \java{setDatastore}, e
+\java{setContextDirectory}, servono per indicare l'ambiente di
+esecuzione di questo \emph{thread}. Tali attributi hanno la seguente
+funzione:
+\begin{itemize}
+\item \java{homePage} indica la pagina
+  iniziale da dove deve partire il \emph{crawling};
+\item \java{currentDatastore} \`e il codice del dipartimento dove \`e stato
+  lanciato il \emph{crawling};
+\item \java{servletTempDir} \`e la directory
+  di esecuzione della servlet, questa serve per poter sapere dove
+  salvare i \emph{file} temporanei necessari durante il \emph{crawling}.
+\end{itemize}
+
+Implementando un \emph{thread}, questa classe dispone del metodo
+\java{run} che viene eseguito al momento del lancio. Questo metodo in
+base al \java{operationCode} indicato, si avvale dell'uso della classe
+\java{KeywordExtractionEngine} per eseguire il \emph{crawling} delle
+\emph{keyword} o della classe \java{CompetenceExtractionEngine} per il
+\emph{crawling} delle competenze. In entrambi i casi vengono passati
+all'\emph{engine} i valori degli attributi necessari per conoscere
+l'ambiente in cui deve operare.
+
+\subsubsection{Classe \java{CompetenceExtractionEngine}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=8, rectangle split part fill={umlTit, umlAtt, umlAtt, umlAtt, umlMet}]{
+        \javat{CompetenceExtractionEngine}
+        \nodepart{two}\javai{startPage : String}
+        \nodepart{three}\javai{currentDatastore : String}
+        \nodepart{four}\javai{homePage : String}
+        \nodepart{five}\javai{annieEngine : StandAloneAnnie}
+        \nodepart{six}\javai{run() : String}
+        \nodepart{seven}\javai{buildPersonMap(annotations : Set<Annotation>) : Map<String, String> }
+        \nodepart{seven}\javai{getAteneoPages(annie:StandAloneAnnie,contextPath:String):ArrayList<String> }
+        \nodepart{eight}\javai{saveDataStore(urimap : Map<String, String>, contextPath : String)}
+      };};
+  \end{tikzpicture}
+\end{center}
+Questa classe implementa il processo principale durante il
+\emph{crawling} di competenze. La classe \java{CompetenceKeyCrawler}
+se riconosce che \`e richiesta una fase di \emph{crawling} di
+competenze lancia il metodo \java{run} di questa classe, dopo averla
+istanziata con i corretti attributi.
+
+La classe presenta un attributo \java{annieEngine} di classe
+\java{StandAloneAnnie} che usa per richiamare la piattaforma
+\emph{GATE} e prelevare le annotazioni trovate. La \emph{pipe} di gate
+usata \`e \gate{competenceExtraction.xgapp}.
+
+Il metodo \emph{run} svolge i seguenti passaggi:
+\begin{enumerate}
+\item usa \java{annieEngine} per annotare i links nella pagina della
+  lista del personale \java{startPage};
+\item usa la funzione \java{buildPersonMap} con le annotazioni trovate
+  per estrarre le features di tali annotazioni e ricavare una mappa
+  ``nome persona''-''link alla pagina della persona'';
+\item per ogni persona della mappa usa il metodo \java{analyze} della classe \java{PersonAnalyzer}
+  per ricavare gli oggetti di classe \java{UnifiOntologyInstance}, che
+  rappresentano le parti di triple da inserire nell'\emph{RDF},
+  riguardanti:
+  \begin{itemize}
+  \item la persona;
+  \item le materie insegnate dalla persona, se presenti;
+  \item i corsi di laurea nei quali insegna la persona, se presenti;
+  \end{itemize}
+\item sempre per la solita persona usa il metodo \java{serialize} della classe
+  \java{OSIM\_RdfSerializer} per salvare nell'\emph{RDF store} le
+  triple riguardanti la persona.
+\end{enumerate}
+
+La classe contiene anche due metodi che non vengono sfruttati in fase
+di \emph{crawling} di competenze, ma in fase di \emph{crawling} di
+\emph{keyword}. Tali metodi sono:
+\begin{itemize}
+  \item \java{getAteneoPages} ritorna un \emph{array} contenente i
+    \emph{link} a tutte le pagine di un dipartimento;
+  \item \java{saveDataStore} richiamata durante l'esecuzione della
+    precedente, si occupa di salvare su disco i documenti
+    corrispondenti a tutte le pagine di un dipartimento nel formato di
+    \emph{GATE} che preserva le annotazioni.
+\end{itemize}
+Quest'ultima funzione \`e necessaria per una funzionalit\`a del
+\emph{crawler} future.
+
+\subsubsection{Classe \java{StandAloneAnnie}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=2, align=right]{
+        \javat{StandAloneAnnie :: CorpusListener}
+        \nodepart{two}\javai{computeAnnotationOnCorpus(documentUrls:ArrayList<String>,}\\\javai{annotationsType:HashSet<String>):Set<Annotation>}
+      };};
+  \end{tikzpicture}
+\end{center}
+Questa classe \`e quella che si occupa di interfacciarsi con il
+\emph{framework GATE}, il suo metodo \java{computeAnnotationOnCorpus}
+viene chiamato ogni volta che \`e necessario reperire delle
+annotazioni su un documento. \java{documentUrls} contiene la lista dei
+documenti da analizzare (nel codice solitamente ha dimensione uno),
+\java{annotationsType} la lista delle annotazioni significative da
+prelevare (anche questo nel codice ha solitamente dimensione uno). Il
+valore di ritorno \`e una lista di \java{Annotation} che \`e la
+classe di \emph{GATE} che rappresenta una annotazione.
+
+Il costruttore di questa classe accetta un parametro \emph{intero} che
+indica quale \emph{pipe} applicare. Tale parametro ha i seguenti
+significati:
+\begin{itemize}
+\item \java{0} viene usata \file{langDetector.xgapp};
+\item \java{1} viene usata \file{it.xgapp};
+\item \java{2} viene usata \file{en.xgapp};
+\item \java{3} viene usata \file{competenceExtraction.xgapp}.
+\end{itemize}
+
+\subsubsection{Classe \java{PersonAnalyzer}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=11, rectangle split part fill={umlTit, umlAtt, umlAtt, umlAtt, umlAtt, umlMet}]{
+        \javat{PersonAnalyzer}
+        \nodepart{two}\javai{annie : StandAloneAnnie}
+        \nodepart{three}\javai{person : UnifiOntologyInstance}
+        \nodepart{four}\javai{courses : ArrayList<UnifiOntologyInstance>}
+        \nodepart{five}\javai{currentCV : ArrayList<UnifiOntologyInstance>}
+        \nodepart{six}\javai{analyze(fullName : String, personLink : String)}
+        \nodepart{seven}\javai{analyzePersonCourses(courseLink : String)}
+        \nodepart{eight}\javai{analyzePersonSinglePage(pageLink : String, courseUri : String)}
+        \nodepart{nine}\javai{getPerson() : UnifiOntologyInstance}
+        \nodepart{ten}\javai{getCourses() : ArrayList<UnifiOntologyInstance>}
+        \nodepart{eleven}\javai{getCurrentCV() : ArrayList<UnifiOntologyInstance>}
+      };};
+  \end{tikzpicture}
+\end{center}
+Questa classe svolge l'analisi di una singola persona in fase di
+\emph{crawling} delle competenze. Il suo attributo \java{annie} viene
+usato per interfacciarsi a \emph{GATE}. Gli attributi \java{person},
+\java{courses}, \java{currentCV} sono usati per memorizzare i risultati dell'analisi. Questi sono di
+tipo \java{UnifiOntologyInstance} che rappresenta una istanza di una
+classe \emph{RDFS}. In questi vengono memorizzate le istanze della
+persona, degli eventuali corsi insegnati da essa, e delle competenze
+trovate.
+
+Il metodo \java{analyze} viene richiamato dall'\emph{engine}
+implementato dalla classe \java{CompetenceExtractionEngine} e crea
+l'istanza \java{person}. Il metodo
+\java{analyzePersonCourse} permette di analizzare le pagine dei corsi
+della persona e crea le istanze \java{courses}. Il metodo
+\java{analyzePersonSinglePage} viene richiamato da entrambi i
+precedenti metodi e crea le istanze \java{currentCV} delle competenze. Se a
+quest'ultimo metodo viene passato \java{courseUri}, annota nelle
+competenze il corso da dove queste sono state estratte, questo
+permette di istanziare in fase di serializzazione la propriet\`a
+\xml{skos:subject}\footnote{Vedere sezione \ref{sec:ontologia}.}.
+
+I metodi \java{get} servono per poter prelevare le istanze create.
+
+\subsubsection{Classe \java{UnifiOntologyInstance}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=13, rectangle split part fill={umlTit, umlAtt, umlAtt, umlAtt, umlAtt, umlMet}]{
+        \javat{UnifiOntologyInstance}
+        \nodepart{two}\javai{uri : String}
+        \nodepart{three}\javai{types : ArrayList<String>}
+        \nodepart{four}\javai{subject : String}
+        \nodepart{five}\javai{literalFeatures : HashMap<String,List<String>>}
+        \nodepart{six}\javai{setUri(newUri : String)}
+        \nodepart{seven}\javai{setType(t : String)}
+        \nodepart{eight}\javai{setSubject(s : String)}
+        \nodepart{nine}\javai{getUri() : String}
+        \nodepart{ten}\javai{getTypes() : ArrayList<String>}
+        \nodepart{eleven}\javai{getSubject() : String}
+        \nodepart{twelve}\javai{addFeatures(key : String, value : String)}
+        \nodepart{thirteen}\javai{getFeatures() : HashMap<String,List<String>>}
+      };};
+  \end{tikzpicture}
+\end{center}
+\`E la classe che rappresenta una istanza di una classe \emph{RDFS},
+gli attributi hanno il seguente significato:
+\begin{itemize}
+\item \java{uri} \`e l'\emph{URI} della risorsa;
+\item \java{types} \`e un array di classi \emph{RDFS} che questa
+  risorsa istanzia;
+\item \java{subject} contiene l'uri di una risorsa di un
+  corso per poter creare la propriet\`a \xml{skos:subject} in fase di
+  serializzazione\footnote{Vedere sezione \ref{sec:ontologia}.};
+\item \java{literalFeatures} \`e un \java{HashMap} dove vengono
+  memorizzate le propriet\`a della risorsa. Vengono memorizzate in una
+  forma contratta in cui ad ogni chiave, che \`e un predicato
+  \emph{RDF}, corrisponde una lista di valori che sono i soggetti;
+\end{itemize}
+
+Il metodo \java{addFeatures} permette di aggiungere una singola
+propriet\`a alla risorsa, viene controllato se la chiave esiste gi\`a ed
+in tal caso viene aggiunto il valore alla lista di tale chiave; in
+caso contrario viene creata la nuova chiave con associata una lista
+unitaria con il valore.
+
+Gli altri metodi sono auto esplicativi.
+
+\subsubsection{Classe \java{OSIM\_RdfSerializer}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [align=left, umltable=7, rectangle split part fill={umlTit, umlAtt, umlMet}]{
+        \javat{OSIM\_RdfSerializer}
+        \nodepart{two}\javai{currentDatastore : String}
+        \nodepart{three}\javai{serialize(person:UnifiOntologyInstance,}\\\javai{competences:ArrayList<UnifiOntologyInstance>,}\\\javai{courses:ArrayList<UnifiOntologyInstance>}
+        \nodepart{four}\javai{checkConsistenceOfCompetence(person:UnifiOntologyInstance,}\\\javai{competences:ArrayList<UnifiOntologyInstance>)}
+        \nodepart{five}\javai{writeInstance(person:UnifiOntologyInstance)}
+        \nodepart{six}\javai{writeCompetenceRelationship(person:UnifiOntologyInstance,}\\\javai{predicateUri:String,}\\\javai{competences:ArrayList<UnifiOntologyInstance>)}
+        \nodepart{seven}\javai{writeCompetenceRelationship(person:UnifiOntologyInstance,}\\\javai{predicateUri:String,}\\\javai{complements:ArrayList<UnifiOntologyInstance>)}
+      };};
+  \end{tikzpicture}
+\end{center}
+\`E la classe che si occupa della serializzazione sull'\emph{RDF
+  Store} delle istanze trovate con la classe \java{PersonAnalyzer}. Il
+metodo \java{serialize} viene chiamato dall'\emph{engine}
+\java{CompetenceExtractionEngine} dopo l'analisi della persona. In
+questo metodo vengono effettuate le operazioni:
+\begin{enumerate}
+\item viene chiamato \java{checkConsistenceOfCompetence} che
+  controlla se le competenze trovate esistono gi\`a per la persona, in
+  caso positivo aggiorna il valore del numero di occorrenze;
+\item viene chiamato \java{writeInstance} che scrive sull'\emph{RDF
+  Store} le istanze della persona, di ogni
+  competenza, e di ogni corso;
+\item viene chiamato \java{writeCompetenceRelationship} che si occupa
+  di scrivere le relazioni tra le istanze delle competenze e la
+  persona; si occupa anche di creare il \emph{bnode};
+\item viene chiamato \java{writeRelationship} che si occupa di
+  scrivere le relazioni tra la persona e i suoi insegnamenti.
+\end{enumerate}
+
+\subsection{Pacchetto \java{KeyExtraction}}
+Contiene le classi necessarie allo svolgimento della fase di
+\emph{crawling} delle \emph{keyword}.
+
+\subsubsection{Classe \java{KeywordExtractionEngine}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=12, rectangle split part fill={umlTit, umlAtt, umlAtt, umlAtt, umlAtt, umlMet}]{
+        \javat{KeywordExtractionEngine}
+        \nodepart{two}\javai{annie : StandAloneAnnie}
+        \nodepart{three}\javai{enGrammar : StandAloneAnnie}
+        \nodepart{four}\javai{itGrammar : StandAloneAnnie}
+        \nodepart{five}\javai{datastore : String}
+        \nodepart{six}\javai{extractKey() : Boolean}
+        \nodepart{seven}\javai{preprocessAteneo() : Boolean}
+        \nodepart{eight}\javai{split() : Boolean}
+        \nodepart{nine}\javai{mergeByLanguage() : Boolean}
+        \nodepart{ten}\javai{extraction() : Boolean}
+        \nodepart{eleven}\javai{extractNoun() : Boolean}
+        \nodepart{twelve}\javai{updateDatabase(datastore : String) : Boolean}
+      };};
+  \end{tikzpicture}
+\end{center}
+\`E la classe che implementa l'engine della fase di estrazione di
+\emph{keyword}. In figura \ref{fig:schemaTempKey} \`e possibile vedere
+uno schema delle chiamate che avvengono durante l'uso di questa
+classe.
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}[auto]
+      \matrix[row sep = 0.5cm, column sep = 0.25cm] {
+        %Head
+        \node[tempLab3] (primo) {\codg{CompetenceKey/\\Crawler}}; &
+        \node[tempHid3] {}; &
+        \node[tempHid3] {}; &
+        \node[tempHid3] {}; &
+        \node[tempLab3] {\codg{ChunkSplitter}}; &
+        \node[tempLab3] {\codg{LanguageDetector}}; \\
+      
+        %i
+        \node[point] (ci) {}; &
+        \node[point] (ki) {}; &
+        \node[point] (kki) {}; &
+        \node[point] (kkki) {}; &
+        \node[point] (si) {}; &
+        \node[point] (li) {}; \\
+
+        %1
+        \node[point] (c1) {};& & & & & \\
+
+        %2
+        & \node[point] (k2) {};& & & & \\
+
+        %3
+        & & \node[point] (kk3) {};& & & \\
+
+        %4
+        & & & \node[point] (kkk4) {};& & \\
+
+        %5
+        & & & & \node[point] (s5) {};& \\
+
+        %6
+        & & & & \node[point] (s6) {};& \\
+
+        %7
+        & & & \node[point] (kkk7) {};& \node[point] (s7) {};& \\
+
+        %8
+        & & \node[point] (kk8) {};& & & \\
+
+        %9
+        & & & \node[point] (kkk9) {};& & \\
+
+        %10
+        & & & & & \node[point] (l10) {};\\
+
+        %11
+        & & & & & \node[point] (l11) {};\\
+
+        %12
+        & & & \node[point] (kkk12) {};& & \\
+
+        %13
+        & & \node[point] (kk13) {};& & & \\
+
+        %14
+        & \node[point] (k14) {};& & & & \\
+
+        %15
+        & & \node[point] (kk15) {};& & & \\
+
+        %16
+        & & & \node[point] (kkk16) {};& & \\
+
+        %17
+        & & & \node[point] (kkk17) {};& & \\
+
+        %18
+        & & \node[point] (kk18) {};& & & \\
+
+        %19
+        & \node[point] (k19) {};& & & & \\
+
+        %20
+        & & \node[point] (kk20) {};& & & \\
+
+        %21
+        & & \node[point] (kk21) {};& & & \\
+
+        %22
+        & \node[point] (k22) {};& & & & \\
+
+        %23
+        \node[point] (c23) {};& & & & & \\
+
+        %e
+        \node[point] (ce) {}; &
+        \node[point] (ke) {}; &
+        \node[point] (kke) {}; &
+        \node[point] (kkke) {}; &
+        \node[point] (se) {}; &
+        \node[point] (le) {}; \\
+      };
+
+      \node[tempLab3, text width = 7cm, right = 0.25cm of primo] {\codg{KeywordExtractionEngine}};
+
+      %verticali
+      \draw [tempLine] (ci) -- (ce);
+      \draw [tempLine] (ki) -- (ke);
+      \draw [tempLine] (kki) -- (kke);
+      \draw [tempLine] (kkki) -- (kkke);
+      \draw [tempLine] (si) -- (s7);
+      \draw [tempLine] (li) -- (le);
+
+      %verticali proc
+      \draw [tempLineProc] (c1) -- (c23);
+      \draw [tempLineProc] (k2) -- (k22);
+      \draw [tempLineProc] (kk3) -- (kk13);
+      \draw [tempLineProc] (kk15) -- (kk18);
+      \draw [tempLineProc] (kkk4) -- (kkk7);
+      \draw [tempLineProc] (kkk9) -- (kkk12);
+      \draw [tempLineProc] (kkk16) -- (kkk17);
+      \draw [tempLineProc] (s5) -- (s6);
+      \draw [tempLineProc] (l10) -- (l11);
+
+      %frecce
+      \draw[freccia] (c1) to node[labelg]{\codg{extractKey}} (k2);
+      \draw[freccia] (k2) to node[labelg]{\codg{preprocessAteneo}} (kk3);
+      \draw[freccia] (kk3) to node[labelg]{\codg{split}} (kkk4);
+      \draw[freccia] (kkk4) to node[labelg]{\codg{split}} (s5);
+      \draw[freccia] (s6) -- (kkk7);
+      \draw[freccia] (kkk7) -- (kk8);
+      \draw[freccia] (kk8) to node[labelg, below]{\codg{mergeByLanguage}} (kkk9);
+      \draw[freccia] (kkk9) to node[labelg]{\codg{detectAndMerge}} (l10);
+      \draw[freccia] (l11) -- (kkk12);
+      \draw[freccia] (kkk12) -- (kk13);
+      \draw[freccia] (kk13) -- (k14);
+      \draw[freccia] (k14) to node[labelg, below]{\codg{extraction}} (kk15);
+      \draw[freccia] (kk15) to node[labelg]{\codg{extractionNoun}} (kkk16);
+      \draw[freccia] (kkk17) -- (kk18);
+      \draw[freccia] (kk18) -- (k19);
+      \draw[freccia] (k19) to node[labelg, below]{\codg{updateDatabase}} (kk20);
+      \draw[freccia] (kk21) -- (k22);
+      \draw[freccia] (k22) -- (c23);
+    \end{tikzpicture}
+  \end{center}
+  \caption{Schema temporale delle chiamate di \java{KeywordExtractionEngine}}
+  \label{fig:schemaTempKey}
+\end{figure}
+In questo schema \`e possibile vedere sia le chiamate interne alla
+classe, che quelle esterne.
+
+Il metodo \java{preprocessAteneo} avvia la fase di preparazione delle
+pagine. Vengono eseguiti in ordine:
+\begin{enumerate}
+\item \java{split} che appoggiandosi alla classe \java{ChunkSplitter}
+  prima recupera tutte le pagine del dipartimento, poi estrae le frasi
+  e le mette nei \emph{file} temporanei;
+\item \java{mergeByLanguage} che appoggiandosi alla classe
+  \java{LanguageDetector} accorpa i \emph{file} delle frasi per lingua.
+\end{enumerate}
+
+I metodi \java{extraction} e \java{extractionNoun} eseguono
+l'estrazione dei sostantivi dai \emph{file} tramite \emph{GATE}.
+
+Infine il metodo \java{updateDatabase} esegue la memorizzazione nel
+\emph{database} delle \emph{keyword} estratte.
+
+\subsubsection{Classe \java{ChunkSplitter}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=3, rectangle split part fill={umlTit, umlAtt, umlMet}]{
+        \javat{ChunkSplitter}
+        \nodepart{two}\javai{annie : StandAloneAnnie}
+        \nodepart{three}\javai{split(documentUrl : String, folderPath : String)}
+      };};
+  \end{tikzpicture}
+\end{center}
+Il suo metodo \java{split} estrae dalla pagina passata le frasi
+tramite \emph{GATE} e le memorizza in  
+\emph{file} nella cartella \java{folderPath}.
+
+\subsubsection{Classe \java{LanguageDetector}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=3, rectangle split part fill={umlTit, umlAtt, umlMet}]{
+        \javat{LanguageDetector}
+        \nodepart{two}\javai{annie : StandAloneAnnie}
+        \nodepart{three}\javai{detectAndMerge(documentsDir : String)}
+      };};
+  \end{tikzpicture}
+\end{center}
+Il suo metodo \java{detectAndMerge} concatena tutti i \emph{file}
+presenti nella cartella passata in tre \emph{file} dividendoli per
+lingua.
+
+%\subsection{Pacchetto \java{RDBMS}}
+
+%\subsubsection{Classe \java{DatabaManager}}
+
+%\subsubsection{Classe \java{OSIM\_KeywordManager}}
+
+
+
+
+\subsection{Pacchetto \java{Translation}}
+Contiene le classi necessarie ad interfacciarsi con il servizio di
+\emph{Google Translate} per poter fare le traduzioni.
+
+In figura \ref{fig:schemaTempTrad} \`e possibile vedere un esempio di
+iterazione tra le classi \java{SingleTranslation},
+\java{Authenticator}, \java{Translator}, la \emph{cache} delle
+traduzioni nel db, e il servizio esterno di \emph{Google Translate}.
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}[auto]
+      \matrix[row sep = 0.5cm, column sep = 0.25cm] {
+        %Head
+        \node[tempLab2] {\codg{SingleTranslator}}; &
+        \node[tempLab2] {\codg{Authenticator}}; &
+        \node[tempLab2] {\codg{Translator}}; &
+        \node[tempLab2] {\dimg Cache}; &
+        \node[tempLab2] {\dimg Google translate}; \\
+      
+        %i
+        \node[point] (Si) {}; &
+        \node[point] (Ai) {}; &
+        \node[point] (Ti) {}; &
+        \node[point] (Ci) {}; &
+        \node[point] (Gi) {}; \\
+
+        %1
+        \node[point] (S1) {};& & & & \\
+
+        %2
+        & \node[point] (A2) {};& & & \\
+
+        %3
+        & & & & \node[point] (G3) {};\\
+
+        %4
+        & & & & \node[point] (G4) {};\\
+
+        %5
+        & \node[point] (A5) {};& & & \\
+
+        %6
+%        \node[point] (S6) {};& \node[point] (A6) {};& & & \\
+
+        %7
+        \node[point] (S7) {};& \node[point] (A7) {};& \node[point] (T7) {};& & \\
+
+        %8
+        & & \node[point] (T8) {};& \node[point] (C8) {};& \\
+
+        %9
+        & & & \node[point] (C9) {};& \\
+
+        %10
+        & & & \node[point] (C10) {};& \\
+
+        %11
+        & & \node[point] (T11) {};& \node[point] (C11) {};& \\
+
+        %12
+        & & & & \node[point] (G12) {};\\
+
+        %13
+        & & & & \node[point] (G13) {};\\
+
+        %14
+        & & \node[point] (T14) {};& & \\
+
+        %15
+        \node[point] (S15) {};& & & & \\
+
+        %e
+        \node[point] (Se) {}; &
+        \node[point] (Ae) {}; &
+        \node[point] (Te) {}; &
+        \node[point] (Ce) {}; &
+        \node[point] (Ge) {}; \\
+      };
+
+      %verticali
+      \draw [tempLine] (Si) -- (Se);
+      \draw [tempLine] (Ai) -- (A7);
+      \draw [tempLine] (T7) -- (Te);
+      \draw [tempLine] (C8) -- (C11);
+      \draw [tempLine] (Gi) -- (Ge);
+
+      %verticali proc
+      \draw [tempLineProc] (S1) -- (S15);
+      \draw [tempLineProc] (A2) -- (A5);
+      \draw [tempLineProc] (T8) -- (T14);
+      \draw [tempLineProc] (C9) -- (C10);
+
+      \draw [tempLineProc] (G3) -- (G4);
+      \draw [tempLineProc] (G12) -- (G13);
+
+      %frecce
+      \draw[freccia] (S1) to node[labelg]{\codg{authenticate}} (A2);
+      \draw[freccia] (A2) to node[labelg]{\dimg richiesta autenticazione} (G3);
+      \draw[freccia] (G4) to node[labelg]{\dimg token} (A5);
+      \draw[freccia] (A5) to node[labelg]{\dimg token} (S7);
+      \draw[freccia] (S7) to node[labelg]{\codg{translate}} (T8);
+      \draw[freccia] (T8) to node[labelg]{\dimg controlla} (C9);
+      \draw[freccia] (C10) to node[labelg]{\dimg negativo} (T11);
+      \draw[freccia] (T11) to node[labelg]{\dimg rich. traduzione} (G12);
+      \draw[freccia] (G13) to node[labelg]{\dimg valore} (T14);
+      \draw[freccia] (T14) to node[labelg]{\dimg valore} (S15);
+
+    \end{tikzpicture}
+  \end{center}
+  \caption{Schema temporale del funzionamento delle traduzioni}
+  \label{fig:schemaTempTrad}
+\end{figure}
+Nell'esempio si ipotizza il caso in cui il controllo nella cache dia
+esito negativo, inoltre le chiamate al metodo \java{authenticate} e
+\java{translate} non ritornino direttamente il valore del \emph{token}
+e del valore tradotto come mostrato nello schema. Queste tornano un
+\emph{booleano} che indica l'esito dell'operazione, e se positivo \`e
+possibile prelevare i valori tramite chiamate ai metodi
+\java{getToken} e \java{getLast}. Questo passaggio \`e stato omesso
+nella figura per rendere pi\`u conciso lo schema.
+
+\subsection{Pacchetto \java{Messaging}}
+Contiene un'unica classe responsabile della conservazione dei messaggi
+di log da visualizzare nelle pagine di amministrazione dei
+dipartimenti.
+
+\subsubsection{Classe \java{Messenger}}
+\begin{center}
+  \begin{tikzpicture}
+    \node [forshadow] {\tikz\node [umltable=4, rectangle split part fill={umlTit, umlAtt, umlMet}]{
+        \javat{Messenger}
+        \nodepart{two}\javai{queues : Map<String,Queue<String>>}
+        \nodepart{three}\javai{println(mess : String, datastore : String)}
+        \nodepart{four}\javai{getln(user : String, datastore : String)}
+      };};
+  \end{tikzpicture}
+\end{center}
+Implementa un produttore-consumatore; i processi quando necessitano di
+comunicare un output scrivono i messaggi nella coda, e
+le pagine \emph{JSP} leggono periodicamente tali messaggi dalla coda.
+
+L'attributo \java{queues} implementa una lista di coppie:
+\begin{itemize}
+\item codice dipartimento;
+\item coda di messaggi.
+\end{itemize}
+Il metodo \java{println} scrive il messaggio indicato nella coda
+associata al dipartimento indicato. Il metodo \java{getln} restituisce
+il primo messaggio della coda associata al dipartimento indicato, solo
+se l'utente indicato ha i permessi.
+
+\end{document}

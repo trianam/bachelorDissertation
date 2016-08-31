@@ -1,0 +1,33 @@
+\makebox[\textwidth][c]{
+  \begin{tikzpicture}[auto]
+    \node[uri] (comp) {\dimt Competenza};
+    \visible<2>{\node[uriEsistente, below = 1.8cm of comp] (schema) {\dimt Concept schema};}
+    \visible<3>{\node[uriEsistente, below = 1.5 of comp] (altra) {\dimt Competenza};}
+    
+    %nodi di comp
+    \node[uriEsistente, above left = 1.5cm and 0.5cm of comp.north] (tipoComp) {\codt{skos:Concept}};
+    \node[letterale, above right = 1.7cm and 0.5cm of comp.north] (nomeComp) {\dimt Nome};
+    
+    %nodi di schema
+    \visible<2>{\node[uriEsistente, below = 1.2cm of schema] (tipoSchema) {\codt{skos:ConceptScheme}};}
+
+    %nodi di altra
+    \visible<3>{\node[uriEsistente, below left = 1.5cm and 0.5cm of altra.south] (tipoAltra) {\codt{skos:Concept}};}
+    \visible<3>{\node[letterale, below right = 1.7cm and 0.5cm of altra.south] (nomeAltra) {\dimt Nome};}
+      
+    
+    %frecce comp
+    \draw[freccia] (comp) to node[labelg]{\codt{rdfType}} (tipoComp);
+    \draw[freccia] (comp) to node[labelg]{\codt{skos:prefLabel}} (nomeComp);
+
+    %frecce schema
+    \visible<2>{\draw[freccia] (schema) to node[labelg, align = left, font = \dimt]{skos:\\hasTopConcept} (comp);}
+    \visible<2>{\draw[freccia] (schema) to node[labelg]{\codt{rdfType}} (tipoSchema);}
+
+    %frecce altra
+    \visible<3>{\draw[freccia] (altra) to node[labelg]{\codt{skos:narrower}} (comp);}
+    \visible<3>{\draw[freccia] (altra) to node[labelg]{\codt{rdfType}} (tipoAltra);}
+    \visible<3>{\draw[freccia] (altra) to node[labelg]{\codt{skos:prefLabel}} (nomeAltra);}
+
+  \end{tikzpicture}
+}

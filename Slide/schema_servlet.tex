@@ -1,0 +1,23 @@
+\makebox[\textwidth][c]{
+    \begin{tikzpicture}[auto]
+      \node [web] (jsp) {Pagina \emph{JSP}};
+      \node [app2, right = 2cm of jsp] (servlet) {Servlet};
+      \node [app2, below = 1.5cm of servlet] (factory) {Command factory};
+      \node [app2, right = 2cm of servlet] (gestore) {Gestore comandi};
+      \node [app2, below = 1.5cm of gestore] (altro) {Eventuali altri oggetti};
+      
+      \draw [dfreccia] (jsp) -- (servlet);
+      \draw [dfreccia] (servlet) -- (factory);
+      \draw [dfreccia] (servlet) -- (gestore);
+      \draw [dtfreccia] (gestore) -- (altro);
+      
+      %evidenzia
+      \visible<2>{\draw [evidenzia, xscale=2.5] (jsp) circle (0.5cm);}
+      \visible<3>{\draw [evidenzia, xscale=1.75] (servlet) circle (0.5cm);}
+      \visible<4>{\draw [evidenzia, xscale=3.5] (factory) circle (0.5cm);}
+      \visible<5>{\node [evidenziaRett, on grid, below = 1.1cm of gestore, text width = 3.75cm, text height = 2.75cm] {};}
+      \node[point, above = 0.25cm of gestore.north west] (p1) {};
+      \node[point, above = 0.25cm of jsp.north east] (p2) {};
+      \visible<6>{\draw [evidenziaFrecc] (p1) -- (p2);}
+    \end{tikzpicture}
+}

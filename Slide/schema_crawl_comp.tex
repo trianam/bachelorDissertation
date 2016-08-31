@@ -1,0 +1,49 @@
+\makebox[\textwidth][c]{
+  \begin{tikzpicture}[auto]
+    \node [db] (tabDip) {\dimg Dipartimenti};
+    \node [web, right = 0.5cm of tabDip] (listaPers) {\dimg Lista persone};
+    \draw [freccia] (tabDip) -- (listaPers);
+    \pause
+
+    \node [gaz, above = 1cm of tabDip] (gazPers) {\dimg Gazetteer persone};
+    \node [app, right = 1cm of gazPers] (estr) {\dimg Estr. \emph{link}};
+    \node [tab, right = 1cm of estr] (tabella) {\dimg Tabella};
+    \node [gate, below = 0.75cm of estr.east] (gate) {\dimg GATE};
+    \draw [freccia] (listaPers) -- (estr);
+    \draw [freccia] (gazPers) -- (estr);
+    \draw [freccia] (estr) -- (tabella);
+    \draw [dfreccia] (estr) -- (gate);
+    \pause
+
+    \node [round, below = 0.5cm of tabella] (pallino) {};
+    \node [app, below = 0.5cm of pallino] (analisi) {\dimg Analisi pers.};
+    \node [app, below right = 0.5cm and 1cm of analisi.south] (trad) {\dimg Traduz.};
+    \node [db, right = 0.75cm of analisi] (carriera) {\dimg Carriera};
+    \node [rdfclist, below = 1.5cm of analisi] (insegnamenti) {\dimg Istanze\\\dimg insegn.};
+    \node [rdfc, left = 0.5cm of insegnamenti] (persona) {\dimg Istanza\\\dimg persona};
+    \node [rdfclist, right = 0.5cm of insegnamenti] (competenze) {\dimg Istanze\\\dimg compet.};
+    \draw [freccia] (tabella) -- (pallino);
+    \draw [freccia] (pallino) -- (analisi);
+    \draw [freccia] (carriera) -- (analisi);
+    \draw [freccia] (analisi) -- (persona);
+    \draw [freccia] (analisi) -- (insegnamenti);
+    \draw [freccia] (analisi) -- (trad);
+    \draw [freccia] (trad) -- (competenze);
+    \draw [dfreccia] (analisi) -- (gate);
+    \pause
+
+    \node [app, below = 0.75cm of insegnamenti] (serializza) {\dimg Serializ.};
+    \node [rdf, left = 1cm of serializza] (rdf) {\dimg RDF store};
+    \draw [freccia] (persona) -- (serializza);
+    \draw [freccia] (insegnamenti) -- (serializza);
+    \draw [freccia] (competenze) -- (serializza);
+    \draw [freccia] (serializza) -- (rdf);
+    \pause
+
+    \node [choice, vuoto, right = 0.5cm of serializza] (rombo) {};
+    \node [point, right = 0.25cm of carriera] (p) {};
+    \draw [freccia] (serializza) -- (rombo);
+    \draw [nfreccia] (rombo) -| (p);
+    \draw [freccia] (p) |- (pallino);
+  \end{tikzpicture}
+}

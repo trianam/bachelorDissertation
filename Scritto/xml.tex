@@ -1,0 +1,1762 @@
+\documentclass[tesi.tex]{subfiles}
+\begin{document}
+\chapter{XML e tecnologie correlate}
+L'\emph{Extensible Markup Language} abbreviato con \emph{XML} \`e, come
+dice il nome, un linguaggio di \emph{markup}, di \emph{marcatura}. Esso
+deriva dallo \emph{Standard Generalized Markup Language} (\emph{SGML})
+e nasce nel 1996 da un gruppo del \emph{W3C} sotto la guida di
+\emph{Jon Bosak} della \emph{Sun Microsystems}.
+
+Secondo le specifiche del
+\emph{W3C}\footnote{\link{http://www.w3.org/TR/xml/} e nello specifico
+  \link{http://www.w3.org/TR/xml/\#sec-origin-goals}.} gli obiettivi fondamentali
+che hanno guidato lo sviluppo dell'XML sono:
+\begin{enumerate}
+  \item XML deve essere semplicemente usabile in internet;
+  \item XML deve supportare un'ampia variet\`a di applicazioni;
+  \item XML deve essere compatibile con SGML;
+  \item deve essere facile scrivere programmi in grado di processare
+    documenti XML;
+  \item il numero delle funzionalit\`a opzionali di XML deve essere
+    mantenuto al minimo, idealmente a zero;
+  \item i documenti XML devono essere leggibili dall'uomo e
+    ragionevolmente chiari;
+  \item il design dell'XML deve essere preparato velocemente;
+  \item il design dell'XML deve essere formale e conciso;
+  \item i documenti XML devono essere facili da creare;
+  \item la sinteticit\`a nel markup XML \`e di minima importanza.
+\end{enumerate}
+
+L'uso principale dell'XML \`e quello di creare documenti e scambiarli
+tra diverse applicazioni usando una tecnologia che permette di creare
+documenti strutturati con un livello scalabile di complessit\`a e con
+un alto livello di flessibilit\`a. Infatti XML ha una sintassi
+estremamente semplice e permette la rappresentazione strutturata
+pressoch\'e di qualsiasi tipo di dato in quanto tale struttura viene
+definita a piacere.
+
+La codifica dei caratteri dei documenti XML \`e l'\emph{unicode}.
+
+Oltre alle specifiche dei documenti XML esistono anche un certo numero
+di tecnologie ausiliarie, anche se spesso con \emph{XML} ci si
+riferisce a tutte quante in realt\`a esse non fanno parte delle
+specifiche del nucleo propriamente detto \emph{XML}. Di tali
+tecnologie noi analizzeremo solo quelle pi\`u importanti, ossia:
+\begin{description}
+  \item[Namespaces] l'uso dei namespace permette di definire dei
+    \emph{vocabolari} che permettono di identificare e
+    differenziare i tag tra di loro;
+  \item[DTD] \`e un linguaggio di \emph{schema} che definisce
+    praticamente una grammatica con cui validare un documento XML;
+  \item[XML Schema] \`e il successore di \emph{DTD}, ed \`e pi\`u
+    potente di questo, \`e in formato XML e fornisce un ricco
+    sistema di tipi di dato;
+  \item[XSLT] sta per \emph{Extensible Stilesheet Language
+    Transformation} e permette di creare dei documenti di
+    trasformazione che, insieme ad un \emph{parser}, permettono di
+    elaborare un documento XML e trasformarlo in un altro documento
+    (che pu\`o anche non essere XML);
+  \item[XPath] \`e un linguaggio che permette di indirizzare parti
+    di un documento XML. Grazie ad XPath \`e possibile
+    fare operazioni come \emph{pescare} il contenuto di un certo tag
+    o prendere tutti i figli di un certo tag;
+  \item[XSL-FO] Sta per \emph{Extensible Stilesheet Language
+    Formatting Objects} ed \`e un linguaggio di presentazione di documenti.
+    Nell'idea originale un documento XML doveva essere trasformato
+    tramite uno schema XSLT (con l'uso anche di XPath) in un
+    documento XSL-FO che poteva essere
+    renderizzato da un \emph{processore FO} in un output leggibile.
+\end{description}
+
+Di seguito analizziamo nel dettaglio l'xml e tali tecnologie.
+
+\section{XML}
+L'\emph{XML} è un \emph{metalinguaggio} di \emph{markup} che definisce
+una sintassi per esprimere una struttura ad albero dove ogni nodo si
+definisce \emph{tag}. La caratteristica principale è che è possibile
+definire una struttura personalizzata a seconda dell'utilizzo che se
+ne vuole fare, cosa che ne permette un uso molto eterogeneo: dalle
+pagine web (con l'\emph{XHTML} che è una formalizzazione in \emph{XML}
+dell'\emph{HTML}) allo scambio di dati o alla definizione di
+linguaggi.
+
+La codifica dei caratteri è \emph{unicode} valida in certi range,
+inoltre è possibile inserire ogni carattere con la sua corrispondente
+codifica decimale \xml{\&\#...;} o esadecimale
+\xml{\&\#x...;}. Ci sono dei caratteri speciali che non possono essere
+usati nel contenuto, ma solo nella struttura, per inserirli
+nel contenuto è necessario usare le entità XML illustrate nella
+tabella \ref{tab:entita}.
+\begin{table}
+  \begin{center}
+    \begin{tabular}{|c|c|}
+      \hline Carattere & Codifica\\
+      \hline \textless & \xml{\&lt;}\\
+      \textgreater & \xml{\&gt;}\\
+      \& & \xml{\&amp;}\\
+      ` & \xml{\&apos;}\\
+      `` & \xml{\&quot;}\\
+      \hline
+    \end{tabular}
+    \caption{Entità \emph{XML}}\label{tab:entita}
+  \end{center}
+\end{table}
+
+Un codice \emph{XML} è costituito da un albero di tags con un singolo tag come radice.
+\begin{code}
+  \begin{xmlblock}
+    <nome attributo1="valore1" attributo2="valore2" attributoX="valoreX">
+      contenuto
+    </nome>
+  \end{xmlblock}
+  \caption{Tag generico}\label{cod:singolotag}
+\end{code}
+Ogni singolo tag è costituito come nel codice \ref{cod:singolotag},
+dove \xml{contenuto} può essere vuoto, un testo oppure una serie di
+altri \emph{tags}, \xml{nome} e \xml{attributoX} non devono contenere
+i caratteri: \\
+\xml{!"\#\$\%\&'()*+,/;<=>?@[$\backslash$]\^`\{|\}~},\\
+spazi, o cominciare per un numero o per \xml{-} o
+\xml{.}. Ovviamente vi possono essere un numero qualsiasi di
+attributi, anche nessuno. Nel caso in cui \xml{contenuto} sia
+vuoto, è possibile usare una forma abbreviata come nel codice
+\ref{cod:abbreviato}.
+\begin{code}
+  \begin{xmlblock}
+    <nome attributo1="valore1" attributo2="valore2" attributoX="valoreX" />
+  \end{xmlblock}
+  \caption{Tag vuoto abbreviato}\label{cod:abbreviato}
+\end{code}
+
+Oltre alla struttura dei \emph{tags}, nello standard può essere
+presente anche una riga preliminare di dichiarazione, definita come nel
+codice \ref{cod:dichiarazione},
+\begin{code}
+  \begin{xmlblock}
+    <?xml version="1.0" encoding="UTF-8" ?>
+  \end{xmlblock}
+  \caption{Dichiarazione}\label{cod:dichiarazione}
+\end{code}
+che deve essere necessariamente la prima e dove vi sono le
+informazioni sulla versione usata dello standard e sulla codifica dei
+caratteri.
+
+Se un documento \emph{XML} rispetta le semplici regole appena definite
+si dice che esso è \emph{ben formato}, oltre a questo, è possibile
+definire uno schema che indica la struttura e i nomi possibili dei
+tags come avviene, per esempio, nelle pagine web in \emph{xhtml} dove vi
+è una riga preliminare (comunque sempre dopo l'eventuale
+\emph{dichiarazione XML}) chiamata \emph{DTD} o \emph{Document Type
+  Definition} tipo quella nel codice \ref{cod:dtd}.
+\begin{code}
+  \begin{xmlblock}
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  \end{xmlblock}
+  \caption{Esempio di DTD}\label{cod:dtd}
+\end{code}
+Se vi è la definizione dello schema allora il documento, oltre ad essere \emph{ben
+  formato}, deve essere anche \emph{valido}, ovvero deve
+rispettare lo schema definito. I concetti di \emph{schema} e di \emph{XML valido} verranno approfonditi meglio nella sezione
+\ref{sec:schemaxml} dove verr\`a introdotto anche il successore del
+\emph{DTD}: \emph{XML Schema}.
+
+\subsection{XML Information Set (Infoset)}\label{sec:infoset}
+Con il termine \emph{Infoset} ci si riferisce ad un \emph{data set}
+astratto che serve per avere un set di definizioni da usare nelle
+specifiche, dove si ha bisogno di accedere all'informazione in un
+documento \emph{XML} ben formato. Pi\`u emplicemente serve per poterci
+riferire in seguito, in questo stesso testo, a certi concetti di un documento
+\emph{XML} come i figli di un elemento o il nome di un attributo.
+
+Il \emph{set di informazioni} di un documento \emph{XML} consiste in
+un certo numero di \emph{information items}, uno per ogni componente
+del documento. Deve esistere almeno l'\emph{information item} del
+\emph{documento}.
+
+Esistono \emph{information items} per diversi concetti, ma qui ne
+saranno enunciati solo alcuni con le propriet\`a pi\`u importanti,
+quelli che saranno necessari allo sviluppo del
+testo. Per una trattazione esaustiva, con la lista completa degli
+\emph{information items}, si rimanda a
+\link{http://www.w3.org/TR/xml-infoset}.
+
+\subsubsection{Information item del documento}
+C'\`e un solo \emph{information item} di documento, tutti gli altri
+sono accessibili \emph{scendendo} nelle propriet\`a di questo
+\emph{information item}. Le propriet\`a sono:
+\begin{description}
+  \item[figli] contiene una lista ordinata di \emph{information item} di elementi, quelli
+    dei figli della radice del documento;
+  \item[elemento documento], l'\emph{information item} di tipo elemento
+    della radice del documento;
+  \item[URI di base] l'uri di base del documento\footnote{Vedi sezione \ref{sec:urienamespaces}
+    per una descrizione degli \emph{URI} e dei
+    \emph{namespaces}\label{note:urienamespaces}.};
+  \item[schema di codifica caratteri];
+  \item[versione], la versione del \emph{XML} del documento.
+\end{description}
+\subsubsection{Information items degli elementi}
+Ci sono \emph{information items} di tipo elemento per ogni elemento
+del documento. Le sue propriet\`a sono:
+\begin{description}
+  \item[nome del namespace], se esiste, dell'elemento in questione. Se
+    l'elemento non appartiene a nessun namespace allora la propriet\`a
+    non ha valore\footnote{Vedi nota \ref{note:urienamespaces}.};
+  \item[nome locale], il nome dell'elemento escluso l'eventuale
+    prefisso del namespace\footnote{Vedi nota \ref{note:urienamespaces}.};
+  \item[prefisso], il prefisso del namespace, se esistente,
+    dell'elemento\footnote{Vedi nota \ref{note:urienamespaces}.};
+  \item[figli] contiene una lista ordinata di \emph{information item}
+    degli elementi figli di questo elemento;
+  \item[attributi] contiene una lista non ordinata di \emph{information
+    item} degli attributi di questo elemento, esclusi quelli di
+    dichiarazione di namespace (\xml{xmlns="..."} e
+    \xml{xmlns:nome="..."})\footnote{Vedi nota
+      \ref{note:urienamespaces}.};
+  \item[attributi namespace] contiene una lista non ordinata di \emph{information
+    item} degli attributi di dichiarazione di namespace di questo
+    elemento\footnote{Vedi nota \ref{note:urienamespaces}.};
+  \item[URI di base], l'uri di base dell'elemento\footnote{Vedi nota
+    \ref{note:urienamespaces}.};
+  \item[parente], l'\emph{information item} dell'elemento o del
+    documento che contiene l'\emph{information item} di questo
+    elemento nella sua lista di \emph{figli}.
+\end{description}
+
+\subsubsection{Information items degli attributi}
+Sono gli \emph{information item} degli attributi che si trovano dentro
+gli elementi. Ogni attributo ne ha uno. Le propriet\`a sono:
+\begin{description}
+  \item[nome del namespace], se esiste, dell'attributo in questione. Se
+    l'attributo non appartiene a nessun namespace allora la propriet\`a
+    non ha valore\footnote{Vedi nota \ref{note:urienamespaces}.};
+  \item[nome locale] il nome dell'attributo escluso l'eventuale
+    prefisso del namespace\footnote{Vedi nota \ref{note:urienamespaces}.};
+  \item[prefisso] il prefisso del namespace, se esistente,
+    dell'elemento\footnote{Vedi nota \ref{note:urienamespaces}.};
+  \item[valore normalizzato] il valore dell'attributo
+    normalizzato\footnote{Vedere
+      \link{http://www.w3.org/TR/REC-xml/\#AVNormalize} per la
+      normalizzazione.};
+  \item[specifico] un flag che indica se l'attributo \`e definito
+    nello \emph{start tag} oppure \`e un elemento di default del
+    \emph{DTD}\footnote{Vedi sezione \ref{sec:dtd}
+    per una descrizione di \emph{DTD}\label{note:dtd}.};
+  \item[tipo di attributo] indica il tipo di attributo indicato nel
+    \emph{DTD}\footnote{Vedi nota \ref{note:dtd}.};
+  \item[riferimento] se l'attributo \`e di un tipo riferimento, allora
+    questa propriet\`a contiene la lista degli \emph{information
+      items} degli elementi ai quali si riferisce;
+  \item[elemento proprietario] l'\emph{information item} dell'elemento
+    che contiene questo \emph{information item} di tipo attributo
+    nella sua lista di \emph{attributi}.
+\end{description}
+
+\section{Uri e namespaces}\label{sec:urienamespaces}
+Un \emph{URI} \`e un
+identificatore che permette di indicare in modo univoco una certa
+risorsa: come gli \emph{URL} nel web permettono di identificare
+univocamente una pagina (o una sezione di una pagina), cos\`i gli
+\emph{URI}, che sono una generalizzazione degli \emph{URL}, permettono
+di identificare un concetto. Se un certo \emph{URI} compare in posti
+diversi allora tutte le sue occorrenze rappresentano la stessa risorsa. La sintassi
+degli \emph{URI}\footnote{Secondo l'\emph{internet standard} \emph{STD
+    66}, vedere \cite{std66}.}  deve essere
+nella seguente forma\footnote{Espressa nella forma \emph{ABNF}
+  descritta nello standard \emph{STD 68}, vedere \cite{std68}.}:
+\begin{abnfblock}
+URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+
+hier-part   = "//" authority path-abempty
+            / path-absolute
+            / path-rootless
+            / path-empty
+
+authority   = [ userinfo "@" ] host [ ":" port ]
+\end{abnfblock}
+Dove \abnf{scheme} e  \abnf{path} sono obbligatori, ma il
+\abnf{path} pu\`o essere anche vuoto. Quando
+\abnf{authority} \`e presente allora il \abnf{path} deve
+essere vuoto o cominciare per il carattere \abnf{/}; quando
+\abnf{authority} non \`e presente allora \abnf{path} non
+pu\`o cominciare con i caratteri \abnf{//}. Brevemente
+accenniamo che nella rappresentazione descritta precedentemente tutti
+i \abnf{path} sono composti da segmenti delimitati dal carattere
+\abnf{/}, inoltre
+\abnf{path-abempty} pu\`o essere vuoto o cominciare com \abnf{/},
+\abnf{path-absolute} comincia con \abnf{/} ma non con \abnf{//},
+\abnf{path-rootless} comincia con un segmento senza \abnf{/} iniziale,
+\abnf{path-empty} \`e una sequenza vuota di caratteri. Per una formalizzazione
+completa degli \emph{URI} si rimanda a \cite{std66}.
+
+Gli \emph{URI}, oltre che nella suddetta forma, possono presentarsi anche in una
+forma \emph{relativa}, a patto che esista un \emph{URI di base} con il
+quale poter \emph{risolvere} l'\emph{URI} relativo in un \emph{URI
+  target} nella forma vista precedentemente. Questi \emph{URI}
+relativi sono nella forma:
+\begin{abnfblock}
+relative-ref  = relative-part [ "?" query ] [ "#" fragment ]
+
+relative-part = "//" authority path-abempty
+              / path-absolute
+              / path-noscheme
+              / path-empty
+\end{abnfblock} 
+dove \abnf{path-noscheme} \`e un segmento che non contiene nessun
+\abnf{:} seguito da altri segmenti \emph{normali}, sempre separati da
+\emph{/}.
+  
+Esiste un modo pratico per indicare gli \emph{URI} in una forma
+maggiormente leggibile e facilmente modificabile: la sintassi in
+questione prende il nome di \emph{qnames} (\emph{Qualified Names}) e
+in questa sintassi un
+\emph{URI} viene rappresentato nella forma
+\begin{xmlblock}
+prefix:identificatore
+\end{xmlblock}
+dove \xml{prefix} \`e usato per creare un mapping con un certo
+\emph{namespace}, quindi da qualche parte \`e necessario indicare
+questa corrispondenza \emph{prefix} - \emph{namespace}.
+
+I \emph{namespaces} non fanno parte del \emph{core} di XML, ma sono
+entrati cos\`i tanto nell'uso comune da essere di fatto una
+funzionalit\`a di base. Essi servono per creare una sorta di vocabolario per poter
+distinguere diverse entit\`a con nome uguale, ad esempio se in un
+documento \emph{XML} voglio creare due tag \xml{<num>...</num>}
+con significato semantico diverso (il primo \`e
+l'identificativo di un cliente e il secondo il numero di dischi venduti
+di un cantante) una soluzione pu\`o essere quella di creare due
+namespace diversi ed assegnare ad ogni tag \emph{num} uno dei
+due. Per fare ci\`o in \emph{XML} si usa lo speciale pseudo attributo
+\xml{xmlns} nel modo seguente:
+\begin{xmlblock}
+<anchestor xmlns:cliente="http://www.example.org/ns/cliente"
+xmlns:disco="http://www.example.org/ns/disco">...
+\end{xmlblock}
+adesso per ogni discendente di \xml{anchestor} esistono i due
+\emph{namespaces} indicati ed \`e possibile riferirsi ad essi usando
+la sintassi \emph{qname}
+\begin{xmlblock}
+<cliente:num>...</cliente:num>
+...
+<disco:num>...</disco:num>
+\end{xmlblock}
+Oltre che per gli elementi, \`e possibile applicare i namespaces anche
+agli argomenti. \`E possibile inoltre indicare un \emph{namespace} di
+default usando la forma
+\xml{xmlns="http://www.example.org/ns/default"} (senza
+specificare il prefisso), in questo modo tutti gli elementi (ed
+attributi) senza un prefisso esplicito appartengono a tale
+\emph{namespace}.
+
+Vi \`e stato un lungo dibattito sulla questione se trattare i
+\emph{namespace} come \emph{URI} e quindi \emph{risolverli} nel caso
+in cui siano nella forma di \emph{URI relativi}, oppure se trattarli
+puramente come delle stringhe e non risolverli. Il dibattito si \`e
+concluso deprecando l'uso degli \emph{URI relativi} (oltre che di
+quelli \emph{vuoti}) nei
+\emph{namespaces}\footnote{Vedere a tal proposito
+  \link{http://www.w3.org/TR/xml-names/\#iri-use}.}.
+
+\section{Linguaggi di schema}\label{sec:schemaxml}
+Esistono due linguaggi di schema associati ad XML: il
+\emph{DTD} e l'\emph{XML Schema}. Entrambi svolgono la stessa funzione
+di base, ossia creare uno schema che fornisce dei limiti alla
+struttura logica che un documento XML esprime. La differenza tra i due
+consiste in questo: il primo \`e nato con XML e perci\`o \`e supportato
+in tutte le versioni ed usa una sintassi basata sulle espressioni
+regolari; \emph{XML Schema}, invece, usa una sintassi XML, inoltre
+\`e molto pi\`u potente di \emph{DTD} ed usa un ricco set di
+dati\footnote{Che sar\`a utile anche in \emph{RDF}, vedere sezione \ref{sec:tipididato}.}.
+
+Se un documento XML prevede anche uno schema, allora oltre ad essere
+\emph{ben formato} deve essere anche \emph{valido}. Un documento \`e
+\emph{valido} se rispetta le regole e le limitazioni imposte da uno
+schema al quale appartiene.
+
+\subsection{DTD}\label{sec:dtd}
+Il \emph{Document Type Definition}, \emph{DTD}, consiste in una
+grammatica per una certa classe di documenti. In un singolo documento
+\`e possibile definire una \emph{document type declaration} che pu\`o
+puntare ad un \emph{DTD} esterno, o contenere direttamente le
+dichiarazioni che costituiscono un \emph{DTD}, nel codice
+\ref{cod:dtd} abbiamo gi\`a visto un esempio di dichiarazione
+\emph{DTD} che punta ad un \emph{DTD} esterno al documento.
+
+\`E possibile vedere la definizione formale completa del \emph{DTD} con la
+grammatica in notazione \emph{Extended Backus Naur Form}
+all'indirizzo: \link{http://www.w3.org/TR/xml/\#sec-prolog-dtd}, comunque
+qui accenniamo all'uso generale della dichiarazione del \emph{DTD} in
+un documento \emph{XML}
+e delle dichiarazioni che compongono il
+\emph{DTD} stesso. Queste ultime dichiarazioni possono essere di
+quattro tipi:
+\begin{itemize}
+  \item dichiarazione tipo di elemento;
+  \item dichiarazione lista attributi;
+  \item dichiarazione entit\`a;
+  \item dichiarazione notazione.
+\end{itemize}
+Definiamo preliminarmente delle entit\`a che useremo nella
+formalizzazione di tali dichiarazioni\footnote{In notazione Extended
+  Backus Naur Form\label{nota:bnf}.} nel codice \ref{code:dtdcomuni}
+\begin{code}
+\begin{abnfblock}
+NameStartChar   ::=   ":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] |
+                      [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D] | 
+                      [#x37F-#x1FFF] | [#x200C-#x200D] |
+                      [#x2070-#x218F] | [#x2C00-#x2FEF] |
+                      [#x3001-#xD7FF] | [#xF900-#xFDCF] |
+                      [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
+
+NameChar        ::=   NameStartChar | "-" | "." | [0-9] | #xB7
+                      | [#x0300-#x036F] | [#x203F-#x2040]
+
+Name            ::=   NameStartChar (NameChar)*
+Names           ::=   Name (#x20 Name)*
+Nmtoken         ::=   (NameChar)+
+Nmtokens        ::=   Nmtoken (#x20 Nmtoken)*
+
+S               ::=   (#x20 | #x9 | #xD | #xA)+
+
+ExternalID      ::=   'SYSTEM' S SystemLiteral
+                    | 'PUBLIC' S PubidLiteral S SystemLiteral
+SystemLiteral   ::=   ('"' [^"]* '"') | ("'" [^']* "'")
+PubidLiteral    ::=   '"' PubidChar* '"' | "'" (PubidChar - "'")* "'"
+PubidChar       ::=   #x20 | #xD | #xA | [a-zA-Z0-9] |[-'()+,./:=?;!*#@$_%]
+\end{abnfblock}%$
+\caption{Costrutti sintattici comuni}\label{code:dtdcomuni}
+\end{code}
+dove \abnf{Name} \`e un possibile tipo di nome costituito da uno dei
+possibili caratteri di start \abnf{NameStartChar} seguito da un numero
+a piacere (anche zero) di possibili caratteri
+\abnf{NameChar}. \abnf{Names} \`e una lista di uno o pi\`u nomi
+separati da spazi. \abnf{Nmtokens} \`e uguale a \abnf{Name} senza la
+limitazione del carattere iniziale (deve comunque essere lungo almeno
+un carattere). \abnf{Nmtokens} similmente a \abnf{Names} \`e una lista
+di uno o pi\`u \abnf{Nmtoken} separati da spazi. \abnf{S} \`e un tipo
+possibile di spazio separatore, comprese tabulazioni e ritorni a
+capo. \abnf{ExternalID} rappresenta un \emph{URI} e pu\`o essere di
+due tipi: usando l'identificatore \xml{SYSTEM} si indica una stringa
+tra virgolette (che non contiene virgolette) o tra apici (che non
+contiene apici) che va convertita in un \emph{URI} (la
+posizione del \emph{DTD} esterno), usando invece \xml{PUBLIC} si
+indicano due stringhe tra virgolette o apici, in quest'ultimo caso il
+processore dell'\emph{XML} oltre a cercare lo schema nell'\emph{URI}
+rappressentato dalla seconda stringa come nel caso di \xml{SYSTEM}, ha
+ulteriori informazioni dalla prima stringa.
+
+La dichiarazione del tipo di documento, all'interno del documento
+\emph{XML} nel caso di un \emph{DTD} esterno ad esso, assume la
+forma\footnote{Vedi nota \ref{nota:bnf}.} del codice \ref{code:dichiarazionedtd}
+\begin{code}
+\begin{abnfblock}
+doctypedecl  ::=  '<!DOCTYPE' S Name (S ExternalID)? S? ('[' intSubset ']' S?)? '>'
+intSubset    ::=  (markupdecl | DeclSep)*
+markupdecl   ::=  elementdecl | AttlistDecl | EntityDecl | NotationDecl | PI | Comment
+DeclSep      ::=  PEReference | S
+\end{abnfblock}
+\caption{Dichiarazione del \emph{doctype}}\label{code:dichiarazionedtd}
+\end{code}
+dove \abnf{Name} deve essere nella forma vista nel codice
+\ref{code:dtdcomuni} e deve essere uguale al nodo radice del documento
+\emph{XML}, \abnf{ExternalID} \`e un \emph{URI} tra virgolette nella
+forma vista nel codice \ref{code:dtdcomuni} e \abnf{intSubset} indica
+il subset del \emph{DTD} in questione da prendere in considerazione.
+Un esempio di dichiarazione pu\`o essere quella dell'\emph{XHTML 1.1}:
+\begin{abnfblock}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+\end{abnfblock}
+che indica che il nodo radice \`e \xml{html} e il tipo di
+dichiarazione \`e \xml{PUBLIC} quindi fornisce due stringhe, una con
+l'URL del file \emph{DTD} con lo schema e una con ulteriori
+informazioni per chi processa questo file \emph{XHTML}. 
+
+Vengono analizzate e formalizzate nel dettaglio le quattro possibili
+dichiarazioni \emph{DTD}:
+
+\subsubsection{Dichiarazioni di tipo elemento}
+Servono per poter indicare la struttura di un certo elemento, \`e
+possibile indicare per ogni singolo elemento quali figli pu\`o
+contenere e in che numero e ordine usando una notazione in stile
+\emph{espressioni regolari}, oppure se un certo elemento pu\`o
+contenere del testo opzionalmente inframezzato da figli. Ogni
+dichiarazione di questo tipo assume la forma\footnote{Vedi nota \ref{nota:bnf}.}:
+\begin{abnfblock}
+elementdecl   ::=   '<!ELEMENT' S Name S contentspec S? '>'
+contentspec   ::=   'EMPTY' | 'ANY' | Mixed | children 
+\end{abnfblock}
+dove:
+\begin{description}
+  \item[S] \`e una possibile rappresentazione del carattere spazio
+    come visto sopra nel codice \ref{code:dtdcomuni};
+  \item[Name] \`e una sequenza di caratteri come visto sopra nel
+    codice \ref{code:dtdcomuni};
+  \item['EMPTY'] indica che il tag deve essere
+    vuoto;
+  \item['ANY'] che pu\`o contenere qualsiasi contenuto;
+  \item[children] \`e una lista di tags che possono essere figli del tag
+    in questione. Tale lista \`e espressa secondo la notazione delle
+    \emph{espressioni regolari}, ossia pu\`o essere una scelta tra un set di
+    valori separati da \xml{|}, una sequenza di valori separati da
+    \xml{,} o una combinazione di queste racchiuse tra \xml{(...)} annotate
+    con uno tra i caratteri \xml{+} per possibili occorrenze di una o
+    pi\`u volte, \xml{*} per zero o pi\`u volte, \xml{?} per zero o una
+    volta, se tale carattere non \`e specificato implica che deve
+    esserci esattamente una occorrenza.
+
+    Ad esempio la dichiarazione:
+    \begin{xmlblock}
+<!ELEMENT div1 (head, (p | list | note)*, div2*)>
+    \end{xmlblock}
+    indica che dentro ogni \xml{div1} ci deve essere un tag \xml{head}
+    seguito da una serie lunga a piacere (anche vuota) di tags che
+    possono essere scelti tra \xml{p}, \xml{list}, \xml{note} in
+    qualsiasi ordine; seguita da una lista sempre lunga a piacere
+    (anche vuota) ti tags di tipo \xml{div2}.
+  \item[Mixed] indica che il tag pu\`o contenere solo del testo indicato
+    con \xml{\#PCDATA}, oppure del testo inframezzato da possibili tags.
+    Nel caso di contenuti misti non
+    \`e possibile specificare l'ordine della sequenza dei figli, come
+    nel caso precedente, ma solo la possibile scelta, inoltre si pu\`o
+    solo usare l'operatore \xml{*} o nessun operatore.
+
+    Ad esempio la dichiarazione:
+    \begin{xmlblock}
+<!ELEMENT p (#PCDATA|a|ul|b|i|em)*>
+    \end{xmlblock}
+    Indica che i tags di tipo \xml{p} possono contenere del testo
+    inframezzato da uno dei possibili tags indicati, in qualsiasi
+    ordine e numero, mentre la dichiarazione:
+    \begin{xmlblock}
+<!ELEMENT b (#PCDATA)>
+    \end{xmlblock}
+    indica che i tag di tipo \xml{b} possono contenere solo testo e
+    non possono essere vuoti.
+\end{description}
+
+\subsubsection{Dichiarazioni di tipo \emph{lista di attributi}}
+Queste dichiarazioni servono per poter definire il set di attributi
+pertinenti ad un certo tipo di tag, porre dei limiti a tali attributi
+e fornire dei valori di default per tali attributi. Queste
+dichiarazioni sono nella forma\footnote{Vedi nota \ref{nota:bnf}.} del
+codice \ref{code:dtdattribute}
+\begin{code}
+\begin{abnfblock}
+AttlistDecl   ::=   '<!ATTLIST' S Name AttDef* S? '>'
+AttDef        ::=    S Name S AttType S DefaultDecl
+
+AttType       ::=    StringType | TokenizedType | EnumeratedType
+StringType    ::=   'CDATA'
+TokenizedType ::=   'ID'
+                  | 'IDREF'
+                  | 'IDREFS'
+                  | 'ENTITY'
+                  | 'ENTITIES'
+                  | 'NMTOKEN'
+                  | 'NMTOKENS'
+EnumeratedType ::=    NotationType | Enumeration
+NotationType   ::=   'NOTATION' S '(' S? Name (S? '|' S? Name)* S? ')'
+Enumeration    ::=   '(' S? Nmtoken (S? '|' S? Nmtoken)* S? ')'
+
+DefaultDecl   ::=   '#REQUIRED' | '#IMPLIED'
+                  | (('#FIXED' S)? AttValue)
+\end{abnfblock}
+\caption{Dichiarazioni di tipo lista di
+  attributi}\label{code:dtdattribute}
+\end{code}
+dove sono costituite da un nome del tag in questione su
+cui si vogliono definire i limiti per gli attributi, e una serie di
+triple chiamate nella definizione sopra \abnf{AttType} divise da spazi
+che indicano tali limiti. Ogni tripla \`e
+costituita da un nome dell'attributo per il quale stiamo definendo i
+limiti, un tipo di attributo e un valore di default. Il tipo di
+attributo, chiamato sopra \abnf{AttType}, pu\`o essere di tipo
+\abnf{EnumeratedType} che consiste in una lista di scelte possibili
+per il contenuto dell'attributo racchiuse tra parentesi \xml{(...)} e
+separate da \xml{|}. Oppure \abnf{AttType} pu\`o essere anche di tipo
+stringa indicato con \xml{CDATA} che implica che pu\`o essere scelta
+qualsiasi stringa come contenuto di questo attributo oppure uno dei
+seguenti tipo con i relativi limiti:
+\begin{description}
+  \item[ID] deve apparire un solo attributo di questo tipo per tag, il
+    valore di tale attributo deve essere una produzione di \abnf{Name} visto
+    sopra nel codice \ref{code:dtdcomuni};
+    questo attributo identifica univocamente il tag, deve avere indicato come valore
+    di default \xml{\#REQUIRED} o \xml{\#IMPLIED};
+  \item[IDREF] il valore dell'attributo deve essere una produzione di
+    \abnf{Name} visto nel codice \ref{code:dtdcomuni};
+  \item[IDREFS] il valore dell'attributo pu\`o essere costituito da
+    una lista di valori di tipo \abnf{Name}, cioè deve essere
+    produzione di
+    \abnf{Names} del codice \ref{code:dtdcomuni};
+  \item[ENTITY] deve essere produzione di \abnf{Name} del codice
+    \ref{code:dtdcomuni}, inoltre deve essere il nome di una entit\`a dichiarata in una
+    dichiarazione di tipo entit\`a;
+  \item[ENTITIES] deve essere produzione di \abnf{Names} del codice
+    \ref{code:dtdcomuni}, inoltre deve essere una lista di nomi di
+    entit\`a dichiarate;
+  \item[NMTOKEN] il contenuto di questi attributi deve essere
+    produzione di \abnf{Nmtoken} del codice \ref{code:dtdcomuni};
+  \item[NMTOKENS] deve essere una lista di \abnf{Nmtoken} separati da
+    spazi, ossia deve essere una produzione di \abnf{Nmtokens} del
+    codice \ref{code:dtdcomuni}.
+\end{description}
+
+Il valore di default, chiamato \abnf{DefaultDecl} nel codice
+\ref{code:dtdattribute}, pu\`o essere \xml{\#REQUIRED} che indica che
+l'attributo deve essere inserito, \xml{\#IMPLIED} che non viene
+fornito nessun valore di default, un valore che rappresenta il valore
+di default o un valore preceduto da \xml{\#FIXED} che indica che il
+valore di default fornito \`e l'unica scelta possibile per tale
+attributo.
+
+\subsubsection{Dichiarazione di entit\`a}
+Le \emph{entit\`a} XML sono come quelle di default viste in tabella
+\ref{tab:entita} di pagina \pageref{tab:entita}. Con questo tipo di
+dichiarazione DTD \`e possibile definire nuove \emph{entit\`a}, in pratica trattasi di tipi di
+\emph{placeholder} che vengono sostituiti
+all'interno del documento con il testo corrispondente indicato da
+queste dichiarazioni. Le dichiarazioni sono nella forma\footnote{Vedi nota \ref{nota:bnf}.} del
+codice \ref{code:dtdentita}
+\begin{code}
+  \begin{abnfblock}
+EntityDecl  ::=  GEDecl | PEDecl
+GEDecl      ::=  '<!ENTITY' S Name S EntityDef S? '>'
+PEDecl      ::=  '<!ENTITY' S '%' S Name S PEDef S? '>'
+EntityDef   ::=  EntityValue | (ExternalID NDataDecl?)
+PEDef       ::=  EntityValue | ExternalID 
+
+NDataDecl   ::=  S 'NDATA' S Name 
+  \end{abnfblock}
+  \caption{Dichiarazioni di entit\`a}
+  \label{code:dtdentita}
+\end{code}
+dove \abnf{Name} \`e il nome dell'entit\`a e il valore dell'entit\`a
+pu\`o essere direttamente un valore racchiuso tra virgolette
+(\abnf{EntityValue}) oppure un identificatore esterno
+(\abnf{ExternalID} vedi codice \ref{code:dtdcomuni}) con una
+dichiarazione opzionale del tipo di dato
+dell'identificatore esterno(\abnf{NDataDecl}), in pratica un uri
+esterno che pu\`o essere risolto.
+
+\subsubsection{Dichiarazione di notazione}
+Le dichiarazioni di notazione sono nella forma:
+\begin{abnfblock}
+NotationDecl  ::=  '<!NOTATION' S Name S (ExternalID | PublicID) S? '>'
+PublicID      ::=  'PUBLIC' S PubidLiteral
+\end{abnfblock}
+e servono per definire un formato ad una risorsa che non \`e n\'e testo
+n\'e XML. Le notazioni indicate possono essere usate in dichiarazioni di
+entit\`a e liste di attributi.
+
+\subsection{XML Schema}\label{sec:xmlschema}
+\emph{XML Schema} svolge la stessa funzione di \emph{DTD}, \`e un
+linguaggio che fornisce la possibilit\`a di creare
+uno schema per definire la struttura di un documento \emph{XML}. \`E
+possibile definire inoltre le relazioni tra gli \emph{elementi} e i loro
+contenuti e gli \emph{attributi} e i loro valori, fornisce inoltre un
+ricco set di \emph{tipi di dato}. \emph{XML Schema}, inoltre, usa una
+sintassi basata su \emph{XML} e fornisce un \emph{namespace}
+\xml{http://www.w3.org/2001/XMLSchema} per la
+definizione degli elementi che compongono lo schema. \`E convenzione
+chiamare tale namespace con il prefisso \xml{xsd} cos\`i come
+l'estensione del file dello schema, oppure anche con il pi\`u conciso
+\xml{xs}. Quindi nel primo tag \`e bene 
+definire:
+\begin{xmlblock}
+xmlns:xs="http://www.w3.org/2001/XMLSchema"
+\end{xmlblock}
+
+Nel file \emph{XML} a cui deve essere assegnato lo \emph{schema}
+bisogna usare il namespace
+\xml{http://www.w3.org/2001/XMLSchema-instance} a cui
+convenzionalmente si associa il prefisso xsi.
+Il compito di assegnare lo schema ad un certo documento \`e del
+\emph{processore} del documento \emph{XML}, come per il \emph{DTD},
+proprio come quest'ultimo viene fornito un set di convenzioni per
+fornire le informazioni al \emph{processore} per effettuare
+l'associazione \emph{documento-schema}. Per questo esistono gli
+attributi \xml{xsi:schemaLocation} e \xml{noNamespaceSchemaLocation},
+nel primo \`e possibile indicare come valore di tale attributo una
+serie di coppie \emph{namespace} - \emph{URI} dello schema, tali
+valori sono tutti separati da spazi e ogni coppia rappresenta un
+namespace e un percorso dove trovare uno schema da usare per tale
+namespace. Se in un documento XML viene definito il primo
+elemento come nel codice \ref{code:dichiarazionexmlschema}
+\begin{code}
+\begin{xmlblock}
+<stylesheet xmlns="http://www.w3.org/1999/XSL/Transform"
+            xmlns:html="http://www.w3.org/1999/xhtml"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://www.w3.org/1999/XSL/Transform
+                                http://www.w3.org/1999/XSL/Transform.xsd
+                                http://www.w3.org/1999/xhtml
+                                http://www.w3.org/1999/xhtml.xsd">
+\end{xmlblock}
+\caption{Dichiarazione \emph{XML SCHEMA} dentro un documento}
+\label{code:dichiarazionexmlschema}
+\end{code}
+per gli elementi associati al namespace di
+default(\xml{http://www.w3.org/1999/XSL/Transform}) viene applicato
+lo schema definito dal documento che si trova all'indirizzo
+\xml{http://www.w3.org/1999/XSL/Transform.xsd}; per quelli associati
+al namespace \xml{html} (\xml{http://www.w3.org/1999/xhtml}) si applica lo schema
+in \xml{http://www.w3.org/1999/xhtml.xsd}. Esiste inoltre l'attributo
+\xml{xsi:noNamespaceSchemaLocation} che, invece di avere una lista di
+coppie di valori, ha una lista di valori singoli, senza che venga specificato il
+\emph{namespace} degli elementi a cui viene applicato tale schema.
+
+Uno schema \`e costituito da componenti che possono essere di diverso
+tipo:
+\begin{itemize}
+  \item componenti definizione di tipo;
+  \item componenti dichiarazione;
+  \item componenti definizione di gruppi attributo;
+  \item componenti gruppo modello e definizione di gruppi modello;
+  \item componenti definizione \emph{identity-constraints};
+  \item componenti annotazione.
+\end{itemize}
+Di seguito vengono analizzati nel dettaglio tali componenti e, inoltre,
+viene dedicata una sezione anche alla descrizione del ricco \emph{set
+  di dati} predefiniti che fornisce \emph{XML SCHEMA}.
+
+I componenti sono definiti in termini delle sue propriet\`a, e per
+ogni propriet\`a definendo la sua immagine. Si pu\`o immaginare uno
+schema come un grafo orientato con radice dove questa radice \`e lo
+schema stesso, ogni nodo \`e un componente o un letterale e ogni arco
+\`e una propriet\`a. 
+
+\subsubsection{Tipo di dato}\label{sec:datasetxmlschema}
+In \emph{XML SCHEMA} un tipo di dato \`e costituito da una tripla
+consistente di:
+\begin{description}
+  \item[spazio valori], un set di valori distinti che sono l'insieme
+    dei valori per un certo tipo di dato. Ogni valore corrisponde ad
+    uno o pi\`u letterali dello \emph{spazio lessicale}.
+
+    Questo spazio pu\`o essere definito:
+    \begin{itemize}
+      \item in modo assiomatico;
+      \item enumerandolo;
+      \item restringendo lo \emph{spazio valori} di un tipo di
+        dato gi\`a esistente, partendo da dei tipi di dato primitivi o da
+        altri gi\`a \emph{derivati};
+      \item come combinazione di valori da uno o pi\`u \emph{spazi
+        valori} gi\`a esistenti;
+    \end{itemize}
+
+  \item[spazio lessicale], un set di \emph{letterali validi} per un
+    certo tipo di dato. Spesso c'\`e una corrispondenza uno ad uno tra
+    gli elementi dello \emph{spazio lessicale} e gli elementi dello
+    \emph{spazio valori}, ma non sempre \`e cos\`i, a volte un singolo
+    valore pu\`o essere rappresentato con diversi modi lessicali: ad esempio \xml{100} e \xml{1.0E2} sono due
+    letterali diversi dello \emph{spazio lessicale} del tipo di dato
+    \emph{float} che denotano entrambi lo stesso valore dello
+    \emph{spazio valori};
+  \item[facets], letteralmente sfaccettature, sono singoli aspetti che
+    definiscono uno spazio, ogni \emph{facet} caratterizza uno
+    \emph{spazio valori} su un'asse o dimensione
+    indipendente. Esistono \emph{facets fondamentali} e \emph{facets
+      non fondamentali}, i primi sono delle proriet\`a astratte che
+    servono per caratterizzare semanticamente i valori di uno
+    \emph{spazio valori} e queste sono tutte le seguenti
+    autoesplicative:
+    \begin{itemize}
+      \item equal;
+      \item ordered;
+      \item bounded;
+      \item cardinality;
+      \item numeric.
+    \end{itemize}
+    I \emph{facets non fondamentali} sono propriet\`a opzionali che
+    servono per restringere lo \emph{spazio valori}, questi sono:
+    \begin{itemize}
+      \item length;
+      \item minLength;
+      \item maxLength;
+      \item pattern;
+      \item enumeration;
+      \item whiteSpace;
+      \item maxInclusive;
+      \item maxExclusive;
+      \item minExclusive;
+      \item minInclusive;
+      \item totalDigits;
+      \item fractionDigits.
+    \end{itemize}
+    Quest'ultimi \emph{facets non fondamentali} non si applicano
+    indiscriminatamente a tutti i tipi di dato, ma ogni tipo primitivo
+    e i suoi derivati ha una possibile scelta di \emph{facets} che
+    possono essere usati.
+
+    Per una trattazione esaustiva dei \emph{facets primitivi} e
+    \emph{non fondamentali} si rimanda a
+    \link{http://www.w3.org/TR/xmlschema-2/\#rf-fund-facets} e a
+    \link{http://www.w3.org/TR/xmlschema-2/\#rf-facets}.
+\end{description}
+
+In figura \ref{fig:tipixmlschema}
+\image{img/xmlschema-type-hierarchy.eps}{Gerarchia dei tipi built-in}{fig:tipixmlschema}
+\`e possibile vedere tutta la vasta gamma dei tipi predefiniti
+dell'\emph{XML-SCHEMA}. La \emph{derivazione per restrizione} consiste
+nel derivare un tipo da un altro restringendo lo \emph{spazio dei
+  valori} con l'uso di \emph{facets non fondamentali}. La \emph{derivazione
+per lista} si ottiene creando uno spazio valori che consiste nelle
+sequenze di lunghezza finita di valori di un altro tipo. Anche se non
+\`e visibile nei tipi di dato built-in, esiste la \emph{derivazione per
+unione} che consiste nel creare uno \emph{spazio dati} unendo gli
+\emph{spazi dati} (e conseguentemente gli \emph{spazi lessicali}) di
+altri tipi di dato.
+
+\emph{XML SCHEMA} fornisce un \emph{namespace} di default per tutti i
+tipi di dato built in e tutti i facets visti:
+\begin{xmlblock}
+http://www.w3.org/2001/XMLSchema
+\end{xmlblock}
+in modo che possano essere indirizzati aggiungendo il nome del tipo di
+dato o del facet come \emph{frammento} dell'\emph{URI} nel modo
+seguente:
+\begin{xmlblock}
+http://www.w3.org/2001/XMLSchema#int
+http://www.w3.org/2001/XMLSchema#maxInclusive
+\end{xmlblock}
+Inoltre per i tipi di dato viene fornito anche il namespace:
+\begin{xmlblock}
+http://www.w3.org/2001/XMLSchema-datatypes
+\end{xmlblock}
+
+\subsubsection{Componenti definizione di tipo}
+I \emph{componenti definizione di tipo} servono per definire i tipi di
+dato come quelli visti nella sezione
+\ref{sec:datasetxmlschema}. Esistono due tipi di definizioni di tipo:
+tipo semplice e tipo complesso.
+
+I componenti per la definizione dei tipi semplici sono una serie di restrizioni
+sulle stringhe e informazioni sui valori che rappresentano applicabili
+ai valori di un attributo XML o ai contenuti testuali di un
+elemento. Ogni definizione di tipo semplice, sia di quelle predefinite
+del \emph{dataset} dell'\emph{XML SCHEMA}\footnote{Vedere sezione
+  \ref{sec:datasetxmlschema}.}, sia creata dall'utente, sono delle
+restrizioni su delle particolari definizioni di tipo di base tramite i
+facets. Ad esempio nel codice \ref{code:esempiotiposemp}
+\begin{code}
+  \begin{xmlblock}
+<xs:simpleType name="civico">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[0-9]+(N|R)?(/[a-z]+)?"/>
+  </xs:restriction>
+</xs:simpleType>
+  \end{xmlblock}
+  \caption{Esempio di componente definizione di tipo semplice}
+  \label{code:esempiotiposemp}
+\end{code}
+viene definito un nuovo tipo \xml{civico} restringendo lo \emph{spazio
+  lessicale} (e quindi lo \emph{spazio valori}) di \xml{string} con un
+pattern definito con una
+\emph{espressione regolare}.
+
+I \emph{tipi complessi} permettono elementi e attributi nel suo
+contenuto. Sono definiti usando l'elemento
+\begin{xmlblock}
+xsi:complexType
+\end{xmlblock}
+e di solito contengono un set di definizioni di elementi, nomi di
+elementi e dichiarazioni di attributi, ad esempio come nel codice
+\ref{code:esempiotipocomp}.
+\begin{code}
+  \begin{xmlblock}
+<xs:complexType name="Indirizzo" >
+  <xs:sequence>
+    <xs:element name="via" type="xs:string"/>
+    <xs:element name="numero"   type="civico"/>
+    <xs:element name="citta"   type="xs:string"/>
+    <xs:element name="cap"  type="xs:decimal"/>
+  </xs:sequence>
+  <xs:attribute name="stato" type="xs:NMTOKEN" fixed="IT"/>
+</xs:complexType>
+  \end{xmlblock}
+  \caption{Esempio di componente definizione di tipo complesso}
+  \label{code:esempiotipocomp}
+\end{code}
+Si noti che in questo codice \`e stato usato come tipo del numero
+civico quello definito prima nel codice \ref{code:esempiotiposemp}.
+
+Per una trattazione completa dei componenti di definizione di tipo
+semplice si rimanda a\\
+\link{http://www.w3.org/TR/xmlschema-1/\#Simple\_Type\_Definitions} e a\\
+\link{http://www.w3.org/TR/xmlschema-2/\#rf-defn},\\
+ per i tipi complessi si rimanda invece a\\
+\link{http://www.w3.org/TR/xmlschema-1/\#Complex\_Type\_Definitions}.
+
+\subsubsection{Componenti dichiarazione}
+Le dichiarazioni possono essere di \emph{attributi} o \emph{elementi},
+le \emph{dichiarazioni di attributi} servono per fornire la
+validazione degli attributi usando una definizione di tipo semplice,
+inoltre permettono anche di specificare dei valori di default o fissi
+per il valore dell'attributo. Ad esempio
+\begin{xmlblock}
+<xs:attribute name="eta" type="xs:positiveInteger" use="required"/>
+\end{xmlblock}
+indica che l'attributo \xml{eta} \`e obbligatorio e deve essere un
+intero positivo.
+
+Le dichiarazioni di \emph{elementi} servono per fornire la validazione
+degli elementi usando una definizione di tipo, definire valori di
+default o fissi per l'\emph{information item} di un
+elemento\footnote{Vedere sezione \ref{sec:infoset}.}),
+stabilire criteri di univocit\`a e relazioni tra i valori degli elementi
+e attributi correlati. Ad esempio il codice
+\ref{code:esempiodichiarazioneelem}
+\begin{code}
+  \begin{xmlblock}
+<xs:element name="PurchaseOrder" type="PurchaseOrderType"/>
+
+<xs:element name="gift">
+ <xs:complexType>
+  <xs:sequence>
+   <xs:element name="birthday" type="xs:date"/>
+   <xs:element ref="PurchaseOrder"/>
+  </xs:sequence>
+ </xs:complexType>
+</xs:element>
+  \end{xmlblock}
+  \caption{Esempio di dichiarazione elemento}
+  \label{code:esempiodichiarazioneelem}
+\end{code}
+definisce un elemento chiamato \xml{PurchareOrder} di tipo
+\xml{PurchaseOrderType} e un altro elemento di nome \xml{gift} che
+deve avere come figli un elemento \xml{birthday} di tipo \xml{date} e
+un elemento di tipo \xml{PurchaseOrder} definito sopra.
+
+Per una trattazione esaustiva sui componenti dichiarazione si rimanda
+a\\
+ \link{http://www.w3.org/TR/xmlschema-1/\#cAttribute\_Declarations} e a\\
+ \link{http://www.w3.org/TR/xmlschema-1/\#cElement\_Declarations}.
+
+\subsubsection{Componenti definizione di gruppi attributo}
+\`E possibile definire dei gruppi di dichiarazioni di \emph{attributi}
+per poi poterli riutilizzare all'interno di dichiarazioni di tipo
+complesse, ad esempio il codice \ref{code:esempiogruppoattributo}
+\begin{code}
+  \begin{xmlblock}
+<xs:attributeGroup name="myAttrGroup">
+    <xs:attribute . . ./>
+    . . .
+</xs:attributeGroup>
+
+<xs:complexType name="myelement">
+    . . .
+    <xs:attributeGroup ref="myAttrGroup"/>
+</xs:complexType>
+  \end{xmlblock}
+  \caption{Esempio di definizione di gruppo di attributi}
+  \label{code:esempiogruppoattributo}
+\end{code}
+raggruppa delle definizioni di attributo dentro il gruppo
+\xml{myAttrGroup} e poi lo usa per definire il tipo \emph{myelement}.
+
+Si rimanda a:\\
+\link{http://www.w3.org/TR/xmlschema-1/\#cAttribute\_Group\_Definitions}\\
+per una trattazione completa.
+
+\subsubsection{Componenti gruppo modello e definizione di gruppi modello}
+I \emph{gruppi modello} servono per poter definire nel dettaglio la
+sequenza degli elementi figlio. Possono essere di tre tipi e possono
+essere anche concatenati, per questo ai contenuti dei \emph{gruppi
+  modello} ci si riferisce con il termine \emph{particelle} che
+possono essere dichiarazioni di elemento o anche altri \emph{gruppi
+  modello}. Questi tre tipi sono:
+\begin{description}
+  \item[sequence] corrisponde alle \emph{particelle} indicate
+    nell'ordine indicato;
+  \item[choice] corrisponde ad una delle particelle indicate;
+  \item[all] corrisponde a tutte le \emph{particelle} indicate in
+    qualsiasi ordine.
+\end{description}
+Abbiamo gi\`a visto un \emph{gruppo modello sequence} nel codice
+\ref{code:esempiodichiarazioneelem}.
+
+Inoltre \`e possibile definire dei \emph{gruppi modello} con
+\xml{xs:group} in modo da poterli inserire per riferimento in altri
+posti. Nel codice \ref{code:esempiogruppomodello}
+\begin{code}
+  \begin{xmlblock}
+<xs:group name="myModelGroup">
+ <xs:sequence>
+  <xs:element ref="someThing"/>
+  . . .
+ </xs:sequence>
+</xs:group>
+
+<xs:complexType name="trivial">
+ <xs:group ref="myModelGroup"/>
+ <xs:attribute .../>
+</xs:complexType>
+  \end{xmlblock}
+  \caption{Esempio di definizione di gruppo modello}
+  \label{code:esempiogruppomodello}
+\end{code}
+\`e possibile vedere un esempio di creazione di un gruppo modello con
+una \emph{sequence} chiamato \xml{myModelGroup}, e poi usato con
+riferimento dentro la dichiarazione di un tipo di dato complesso
+chiamato \xml{trivial}.
+
+Per chiarezza, le \emph{particelle} che abbiamo citato prima (il
+contenuto dei gruppi modello) oltre a poter essere delle dichiarazioni
+di elemento o dei gruppi modello a sua volta, esse possono essere
+anche delle \emph{wildcard}. Le \emph{wildcard} possono
+\emph{matchare} \emph{information items} di elementi e attributi
+dipendentemente dai loro nomi di namespace e indipendentemente dai
+loro nomi locali\footnote{Vedere sezione \ref{sec:infoset}.}. 
+
+Per una trattazione esaustiva dei \emph{gruppi modello} si rimanda a\\
+\link{http://www.w3.org/TR/xmlschema-1/\#Model\_Groups},\\
+mentre per la dichiarazione di \emph{gruppi modello}\\ 
+\link{http://www.w3.org/TR/xmlschema-1/\#cModel\_Group\_Definitions}.
+
+\subsubsection{Componenti definizione \emph{identity-constraints}}
+Questi componenti forniscono la possibilit\`a di definire un sistema
+di riferimenti e univocit\`a degli elementi o attributi di dove sono
+definiti. Esistono tre tipi di questi componenti e tutti richiedono
+che sia specificato un \xml{selector} e almeno un \xml{field}, oltre
+che un \xml{name} con cui identificare il componente:
+\begin{description}
+  \item[unique] garantisce l'univocit\`a di tutte le tuple risultanti
+    dalla valutazione dei campi \xml{field} rispetto al campo
+    \xml{selector}. Nei campi \xml{field} vi \`e indicata una
+    espressione \emph{XPath}\footnote{Vedere sezione \ref{sec:xpath}
+      per le espressioni \emph{XPath}.} con cui effettuare la valutazione in
+    questione;
+  \item[key] oltre a garantire l'univocit\`a come per \emph{unique},
+    assicura che le tuple risultanti dalla valutazione effettivamente
+    siano presenti;
+  \item[keyref] assicura una corrispondenza tra le tuple risultanti
+    dalla valutazione e quelle identificate dal componente indicato
+    nel campo \xml{refer}.
+\end{description}
+
+Per meglio comprendere prendiamo ad esempio il codice \emph{XML}
+\ref{code:esempioidconst} e il relativo codice dello schema
+\ref{code:esempioidconstschema},
+\begin{code}
+  \begin{xmlblock}
+<dipartimento xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="schema.xsd">
+  <docenti>
+    <docente codiceCorso="386">
+      <nome>Mario Rossi</nome>
+      <ruolo valore="Professore"/>
+    </docente>
+    <docente codiceCorso="103">
+      <nome>Paolo Verdi</nome>
+    </docente>
+    <assistente codiceCorso="386">
+      <nome>Franco Neri</nome>
+      <ruolo valore="Ricercatore"/>
+    </assistente>
+  </docenti>
+  <corsi>
+    <corso>
+      <codice>386</codice>
+      <nome>Informatica</nome>
+      <cfu>12</cfu>
+    </corso>
+    <corso>
+      <codice>103</codice>
+      <nome>Analisi matematica</nome>
+      <cfu>12</cfu>
+    </corso>
+  </corsi>
+</dipartimento>
+  \end{xmlblock}
+  \caption{Esempio documento XML}
+  \label{code:esempioidconst}
+\end{code}
+\begin{code}
+  \begin{xmlblock}
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="dipartimento" type="DipartimentoType">
+    <xs:keyref name="corsoKeyRef" refer="corsoKey">
+      <xs:selector xpath="dipartimento/*"/>
+      <xs:field xpath="@codiceCorso"/>
+    </xs:keyref>
+    <xs:key name="corsoKey">
+      <xs:selector xpath=".//corso"/>
+      <xs:field xpath="codice"/>
+    </xs:key>
+  </xs:element>
+  <xs:complexType name="DipartimentoType">
+    <xs:sequence>
+      <xs:element name="docenti" type="DocentiType"/>
+      <xs:element name="corsi" type="CorsiType"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="DocentiType">
+    <xs:choice maxOccurs="unbounded">
+      <xs:element name="docente" type="DocenteType"/>
+      <xs:element name="assistente" type="DocenteType"/>
+    </xs:choice>
+  </xs:complexType>
+  <xs:complexType name="DocenteType">
+    <xs:sequence>
+      <xs:element name="nome" type="xs:string"/>
+      <xs:element name="ruolo" type="RuoloType" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute name="codiceCorso" type="xs:integer"/>
+  </xs:complexType>
+  <xs:complexType name="CorsiType">
+    <xs:sequence>
+      <xs:element name="corso" type="CorsoType"
+                   maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="CorsoType">
+    <xs:sequence>
+      <xs:element name="codice" type="xs:integer"/>
+      <xs:element name="nome" type="xs:string"/>
+      <xs:element name="cfu" type="xs:integer"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="RuoloType">
+    <xs:attribute name="valore" type="xs:string"/>
+  </xs:complexType>
+</xs:schema>
+  \end{xmlblock}
+  \caption{Esempio di schema per il codice \ref{code:esempioidconst}}
+  \label{code:esempioidconstschema}
+\end{code}
+oltre alla definizione dei componenti di definizione
+\emph{identity-constraints} \`e possibile vedere anche i componenti di
+dichiarazione degli elementi e degli attributi.
+
+Come si pu\`o vedere dal codice, oltre alla definizione dello schema
+degli elementi e attributi, viene usato un componente \xml{xs:key}
+chiamato \xml{corsoKey} che definisce l'esistenza e l'univocit\`a di
+elementi \xml{codice} figli di \xml{corso}. Viene inoltre dichiarata
+una \xml{xs:keyref} di nome \xml{corsoKeyRef} con riferimento a
+\xml{corsoKey} che garantisce che i valori degli attributi
+\xml{codiceCorso} dei discendenti di \xml{dipartimento} siano
+corrispondenti a quelli indicati nel componente \xml{corsoKey}.
+
+Si ricorda che per comprendere le espressioni \emph{XPath} si rimanda
+alla sezione \ref{sec:xpath}.
+
+\subsubsection{Componenti annotazione}
+Questi componenti servono per creare delle annotazioni adatte al
+consumo umano o anche da parte di un programma. Queste annotazioni non
+sono 
+necessarie al funzionamento dello schema, ma sono utili per tenere traccia
+delle revisioni o commentare delle parti del codice di uno
+schema o anche per fornire ad un programma delle informazioni
+su un componente, ad esempio come trattare un tipo di dato.
+
+Queste annotazioni possono essere di tre tipi e sono tutti e tre
+visibili nel codice di esempio \ref{code:esempioannotazioni}
+\begin{code}
+  \begin{xmlblock}
+<xs:simpleType fn:note="special">
+  <xs:annotation>
+   <xs:documentation>A type for experts only</xs:documentation>
+   <xs:appinfo>
+    <fn:specialHandling>checkForPrimes</fn:specialHandling>
+   </xs:appinfo>
+  </xs:annotation>
+</xs:simpleType>
+  \end{xmlblock}
+  \caption{Esempio di annotazioni}
+  \label{code:esempioannotazioni}
+\end{code}
+tutte all'interno di una dichiarazione di un tipo di dato
+semplice. \xml{xs:annotation} \`e il \emph{contenitore} delle
+annotazioni e al suo interno pu\`o contenere gli altri due componenti:
+\xml{xs:documentation} inteso per un consumo umano e \xml{xs:appinfo}
+inteso per un consumo automatico.
+
+\`E possibile anche fornire delle note usando un namespace diverso da
+quello dello schema, sia all'interno di un componente annotazione, sia
+per l'elemento che racchiude l'annotazione (come per \xml{fn:note}
+nell'esempio).
+
+\section{Famiglia XSL}\label{sec:xsl}
+\emph{XSL} sta per \emph{Extensible Stylesheet Language} e, come
+indica il nome, lo scopo della sua esistenza \`e quello di fornire un
+metodo per creare dei fogli di stile per i documenti \emph{XML}. 
+Con \emph{XSL} \`e possibile dividere il contenuto dei documenti
+\emph{XML} dalla sua presentazione, il modo in cui vengono
+visualizzati.
+
+Per funzionare, \emph{XSL} ha bisogno di un \emph{processore XSL} che
+porti a completamento il procedimento di creare una presentazione per
+un documento \emph{XML} (o anche pi\`u documenti). Tale
+\emph{processore} esegue due passaggi (tralasciando i
+passaggi intermedi non utili alla comprensione), partendo dal
+documento \emph{XML} iniziale effettua una \emph{trasformazione} in un altro
+documento \emph{XML} formattato secondo un linguaggio chiamato
+\emph{XSL-FO}, \emph{XSL Formatting Objects}, poi effettua una
+\emph{formattazione} di tale documento \emph{XSL-FO} interpretandolo e
+visualizzandolo, o stampandolo, o qualunque cosa a seconda del
+dispositivo che effettua tale passaggio. Quest'ultimo passaggio in realt\`a
+\`e composto da diversi sottopassaggi concatenati che non sono utili
+per lo scopo di questo testo\footnote{Si veda
+  \link{http://www.w3.org/TR/xsl/\#d0e209} per una introduzione a tali
+  sottopassaggi.}.
+
+Per poter fare la prima \emph{trasformazione} \`e necessario dover
+fornire uno schema da seguire, per creare tale schema esiste un
+linguaggio apposta: \emph{XSLT}, \emph{XSL Transformation}. I
+documenti in formato \emph{XSLT} prendono il nome di
+\emph{stylesheet}. 
+
+Come spesso accade nel mondo dell'\emph{XML}, cose che sono create con un
+certo scopo finiscono con l'essere utili anche in altri ambiti, cos\`i
+l'\emph{XSLT} \`e talmente flessibile da poter essere usato per
+trasformare un \emph{XML} in qualsiasi tipo di documento, non solo in
+documenti \emph{XML-FO}, anche in documenti non \emph{XML}. Per questo
+esistono dei \emph{processori XSLT} che, di fatto, implementano solo la
+prima fase del \emph{processore XSL} visto prima, prendendo come input
+il documento \emph{XML} da trasformare e lo stylesheet \emph{XSLT} e
+fornendo in output il risultato della trasformazione. 
+
+In figura \ref{fig:processorexsl}
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}[x=10cm, y=4cm]
+      \node (xml) at (0,1) [file] {Documento XML};
+      \node (xslt) at (0.25,0) [file] {Documento XSLT};
+      \node (xslfo) at (0.5,1) [file] {Documento XSL-FO};
+      \node (dispo) at (1,1) [disp] {Dispositivo};
+      \node (trans) at (0.25,0.5) [app, text width = 2.5cm] {Trasformazione};
+      \node (format) at (0.75,0.5) [app, text width = 2.5cm] {Formattazione};
+      \draw [freccia] (xml) to (trans);
+      \draw [freccia] (xslt) to (trans);
+      \draw [freccia] (trans) to (xslfo);
+      \draw [freccia] (xslfo) to (format);
+      \draw [freccia] (format) to (dispo);
+    \end{tikzpicture}
+  \end{center}
+  \caption{Schema del processore XSL}
+  \label{fig:processorexsl}
+\end{figure}
+\`e possibile vedere uno schema del funzionamento di un
+\emph{processore XSL}.
+ 
+Per il suo funzionamento \emph{XSLT} usa un linguaggio per
+identificare parti del documento \emph{XML} da trasformare. Questo
+linguaggio prende il nome di \emph{XPath}. Nello specifico viene usato
+per \emph{pescare} gli elementi o gli attributi, anche a blocchi dal
+documento \emph{XML}, per poi poter decidere cosa farne e come devono
+essere visualizzati nella trasformazione.
+
+Di seguito vengono analizzati nel dettaglio \emph{XPath} e
+\emph{XSLT}. \emph{XSL-FO} viene tralasciato in questo testo in quanto
+si tratta di un vocabolario non molto usato e 
+non \`e necessario per gli scopi di questo scritto.
+
+\subsection{XPath}\label{sec:xpath}
+Lo scopo principale di \emph{XPath} \`e quello di indirizzare parti di
+documenti \emph{XML}. Pur essendo nato all'interno della famiglia
+\emph{XSL}, e pi\`u precisamente all'interno di \emph{XSLT}, esso \`e
+abbastanza versatile da poter essere usato anche in altri ambiti. Ad
+esempio esistono librerie \emph{Java} che permettono di accedere a
+documenti \emph{XML} tramite \emph{XPath}.
+
+\emph{XPath} \`e formulato in modo da basarsi sulla \emph{struttura
+  logica} di un \emph{XML} pi\`u che sulla struttura sintattica. Un
+documento \emph{XML} viene interpretato come un \emph{albero} di
+\emph{nodi} dove ogni nodo pu\`o essere di tipo \emph{elemento},
+\emph{attributo}, \emph{testo}. Ognuno di questi nodi viene valutato
+come un valore testuale, qualche tipo di nodo ha anche un nome.
+
+Il modo in cui \emph{XPath} rappresenta il documento pu\`o essere
+derivato dagli \emph{information items} forniti da \emph{Infoset}
+(vedere sezione \ref{sec:infoset}). Per dettagli su questa derivazione
+si rimanda all'indirizzo \link{http://www.w3.org/TR/xpath/\#infoset}.
+
+\emph{XPath}, a differenza degli altri due linguaggi di \emph{XSL},
+non usa una sintassi \emph{XML}, bens\`\i consiste in una
+\emph{espressione} la cui valutazione ritorna degli indirizzi di punti
+precisi del documento. Cosa fare con questi indirizzi dipende da chi
+usa \emph{XPath}, ad esempio usato nelle \emph{XSLT} \`e possibile
+prendere dei contenuti dagli attributi o elementi da poter portare nel
+documento risultante della trasformazione.
+
+\emph{XPath} supporta anche i \emph{namespaces}, quindi i nomi dei
+nodi consistono in una \emph{parte locale} e un \emph{URI} del
+\emph{namespace} eventualmente vuoto.
+
+Pi\`u precisamente la valutazione dell'\emph{espressione} ritorna uno
+dei seguenti possibili \emph{oggetti}:
+\begin{description}
+  \item[node-set] una collezione non ordinata di nodi senza duplicati;
+  \item[booleano] vero o falso;
+  \item[numero] un numero floating point;
+  \item[stringa] una sequenza di caratteri.
+\end{description}
+
+La valutazione dell'espressione avviene relativamente ad un \emph{contesto}
+che deve essere deciso da chi usa \emph{XPath} e richiama
+l'espressione. Tale \emph{contesto} consiste in:
+\begin{description}
+  \item[\emph{context node}] un nodo che identifica il punto dal quale
+    valutare una certa espressione;
+  \item[\emph{context position} e \emph{Context size}] due interi
+    positivi tali che la \emph{context position} \`e sempre minore o
+    uguale della \emph{context size};
+  \item[\emph{variable bindings}] un set che consiste in un
+    \emph{mapping} da nomi di variabile a valori di variabile. I
+    valori possono essere del tipo dei risultati
+    dell'espressione visti prima, o anche di altri tipi;
+  \item[\emph{function library}] un set che consiste in un
+    \emph{mapping} da nomi di funzione a funzioni. Esiste una libreria
+    di \emph{core} che tutte le implementazioni di \emph{XPath}
+    implementano, inoltre gli utilizzatori di \emph{XPath} possono
+    estendere tale set con altre funzioni personalizzate;
+  \item[\emph{namespace declaration}] consiste in un mapping dai
+    prefissi dei \emph{namespace} e i relativi \emph{URI}.
+\end{description}
+
+I \emph{variable bindings}, la \emph{function library} e i
+\emph{namespace declaration} rimangono costanti per tutta
+l'espressione. Il \emph{context node}, la \emph{context position} e la
+\emph{context size} possono variare nella valutazione di
+\emph{sottoespressioni} rispetto all'\emph{espressione contenitrice}.
+
+Una espressione deve essere nella forma\footnote{In forma
+  \emph{Extended Backus Naur Form}.} di \abnf{Expr} del seguente codice:%codice \ref{code:sintassixpath}
+%\begin{code}
+  \begin{abnfblock}
+Expr   ::=   OrExpr
+
+OrExpr         ::=   AndExpr
+                   | OrExpr 'or' AndExpr
+AndExpr        ::=   EqualityExpr
+                   | AndExpr 'and' EqualityExpr
+EqualityExpr   ::=   RelationalExpr
+                   | EqualityExpr '=' RelationalExpr
+                   | EqualityExpr '!=' RelationalExpr
+RelationalExpr ::=   AdditiveExpr
+                   | RelationalExpr '<' AdditiveExpr
+                   | RelationalExpr '>' AdditiveExpr
+                   | RelationalExpr '<=' AdditiveExpr
+                   | RelationalExpr '>=' AdditiveExpr
+
+AdditiveExpr       ::=   MultiplicativeExpr
+                       | AdditiveExpr '+' MultiplicativeExpr
+                       | AdditiveExpr '-' MultiplicativeExpr
+MultiplicativeExpr ::=   UnaryExpr
+                       | MultiplicativeExpr MultiplyOperator UnaryExpr
+                       | MultiplicativeExpr 'div' UnaryExpr
+                       | MultiplicativeExpr 'mod' UnaryExpr
+UnaryExpr          ::=   UnionExpr
+                       | '-' UnaryExpr
+
+UnionExpr      ::=   PathExpr
+                   | UnionExpr '|' PathExpr
+PathExpr       ::=   LocationPath
+                   | FilterExpr
+                   | FilterExpr '/' RelativeLocationPath
+                   | FilterExpr '//' RelativeLocationPath
+FilterExpr     ::=   PrimaryExpr
+                   | FilterExpr Predicate
+
+LocationPath         ::= RelativeLocationPath
+                       | AbsoluteLocationPath
+AbsoluteLocationPath ::= '/'RelativeLocationPath?
+                       | AbbreviatedAbsoluteLocationPath
+RelativeLocationPath ::= Step
+                       | RelativeLocationPath '/' Step
+                       | AbbreviatedRelativeLocationPath
+AbbreviatedAbsoluteLocationPath   ::=   '//'RelativeLocationPath
+AbbreviatedRelativeLocationPath   ::=   RelativeLocationPath '//' Step
+
+Step            ::=   AxisSpecifier NodeTest Predicate*
+                    | AbbreviatedStep
+AxisSpecifier   ::=   AxisName '::'
+                    | AbbreviatedAxisSpecifier
+AbbreviatedStep            ::=   '.'
+                               | '..'
+AbbreviatedAxisSpecifier   ::=   '@'?
+
+NodeTest   ::=   NameTest
+               | NodeType '(' ')'
+               | 'processing-instruction' '(' Literal ')'
+NameTest   ::=   '*'
+               | NCName ':' '*'
+               | QName
+
+Predicate     ::=   '[' PredicateExpr ']'
+PredicateExpr ::=   Expr
+
+PrimaryExpr   ::=   VariableReference
+                  | '(' Expr ')'
+                  | Literal
+                  | Number
+                  | FunctionCall
+
+VariableReference   ::=   '$' QName
+
+Literal    ::=   '"' [^'']* '"'
+               | "'" [^']* "'"
+Number     ::=   Digits ('.' Digits?)?
+               | '.' Digits
+Digits     ::=   [0-9]+
+
+FunctionCall ::=   FunctionName '(' ( Argument ( ',' Argument )* )?')'
+Argument     ::=   Expr
+FunctionName ::=   QName - NodeType
+
+NodeType   ::=   'comment'
+               | 'text'
+               | 'processing-instruction'
+               | 'node'
+
+AxisName   ::=   'ancestor'
+               | 'ancestor-or-self'
+               | 'attribute'
+               | 'child'
+               | 'descendant'
+               | 'descendant-or-self'
+               | 'following'
+               | 'following-sibling'
+               | 'namespace'
+               | 'parent'
+               | 'preceding'
+               | 'preceding-sibling'
+               | 'self'
+
+QName            ::=   PrefixedName
+                     | UnprefixedName
+PrefixedName     ::=    Prefix ':' LocalPart
+UnprefixedName   ::=    LocalPart
+Prefix           ::=   NCName
+LocalPart        ::=   NCName
+
+NCName   ::=   Name - (Char* ':' Char*)
+  \end{abnfblock}%$
+%  \caption{Sintassi delle espressioni \emph{XPath}}
+%  \label{code:sintassixpath}
+%\end{code}
+dove \abnf{Name} \`e nella stessa forma dei nomi \emph{XML} visti
+nel codice \ref{code:dtdcomuni} a pagina \pageref{code:dtdcomuni}.
+
+\subsubsection{Location paths}
+Le espressioni pi\`u importanti sono quelle che usano
+\abnf{LocationPath} in quanto permettono di selezionare un set di nodi
+relativo al \emph{context node} e di contenere ricorsivamente altre
+espressioni. Ci sono due tipi di \emph{location
+  path}: relativi e assoluti.
+
+Quelli relativi consistono in una sequenza di uno o pi\`u \emph{steps}
+separati da ``/''. Ogni \emph{step} seleziona un set di nodi relativo
+ad un \emph{context node}, poi ogni nodo di tale set \`e usato come
+\emph{context node} per lo \emph{step} successivo. 
+
+Un \emph{path} assoluto consiste in un carattere ``/'' seguito da un
+\emph{path} relativo. L'effetto di rendere un path assoluto \`e che il
+\emph{context node} viene posto uguale alla radice del documento che
+conteneva il \emph{context node} e poi viene valutato il path
+relativo indicato.
+
+Un singolo \emph{step} ha tre parti:
+\begin{description}
+  \item[un \emph{axis}] che specifica la relazione nell'albero tra il
+    nodo selezionato e il \emph{context tree};
+  \item[un \emph{note test}] che specifica il tipo o il nome del nodo selezionato;
+  \item[zero o pi\`u \emph{predicati}] che usano espressioni
+    arbitrarie per raffinare il set di nodi selezionato.
+\end{description}
+
+Gli \emph{axes} possono essere i seguenti:
+\begin{description}
+  \item[child] i figli del \emph{context node};
+  \item[descendant] i figli del \emph{context node} e ricorsivamente tutti i
+    discendenti;
+  \item[parent] il genitore del \emph{context node}, se esiste;
+  \item[anchestor] il genitore e ricorsivamente tutti gli antenati;
+  \item[following-sibling] il fratello in ordine successivo del
+    \emph{context node}. I nodi di tipo attributo o namespace hanno
+    \emph{following-sibling} vuoto;
+  \item[preceding-sibling] come il precedente ma per il fratello
+    precedente;
+  \item[following] tutti i nodi che sono successivi al \emph{context
+    node} nell'ordine del documento, escludendo i discendenti e i nodi
+    di tipo attributo e namespace;
+  \item[preceding] come il precedente ma per i nodi precedenti;
+  \item[attribute] contiene tutti gli attributi del \emph{context
+    node}. Se il \emph{context node} non \`e un elemento, allora \`e
+    vuoto. Esiste una abbreviazione per questo axis che corrisponde a
+    \xml{@};
+  \item[namespace] contiene tutti i namespace del \emph{context node}.
+    Se il \emph{context node} non \`e un elemento, allora \`e vuoto;
+  \item[self] contiene il \emph{context node} stesso;
+  \item[descendant-or-self] contiene il \emph{context node} e i
+    discendenti di questo;
+  \item[ancestor-or-self] come il precedente per gli antenati.
+\end{description}
+Si pu\`o notare che \xml{anchestor}, \xml{descendant},
+\xml{following}, \xml{preceding} e \xml{self} costituiscono una
+partizione dell'insieme di
+tutti i nodi di tipo elemento del documento di appartenenza del
+\emph{context node}.
+
+Passando ai \emph{node test} è bene premettere che ogni \emph{axis} ha il
+suo \emph{tipo principale di nodo}, per \abnf{attribute} \`e
+\emph{attributo}, per \abnf{namespace} \`e \emph{namespace}, e per
+tutti gli altri \`e \emph{elemento}. Detto ci\`o, i \emph{node test}
+servono per limitare il set dei nodi dell'axis. Ogni \emph{node test}
+torna un valore di verit\`a per ogni nodo, se vero il nodo in
+questione viene selezionato, altrimenti no.
+
+Osservando la grammatica si nota che un \emph{node test} pu\`o essere
+nelle forme:
+\begin{itemize}
+  \item \xml{QName} \`e vero se il tipo del nodo \`e il tipo
+    principale di nodo per l'\emph{axis} in questione e se ha un
+    nome esteso uguale al nome esteso specificato da \xml{QName}. Ad
+    esempio l'espressione \xml{child::div} seleziona gli elementi
+    \emph{div} figli del \emph{context node}, \xml{attribute::href}
+    seleziona gli attributi \xml{href} del \emph{context node};
+  \item \xml{NCName:*} \`e vero per ogni nodo del tipo principale che
+    ha l'\emph{URI} del \emph{namespace} uguale all'espansione del
+    prefisso \xml{NCName};
+  \item \xml{*} \`e vero per ogni nodo di tipo uguale al tipo di nodo
+    principale, ad esempio \xml{child::*} seleziona tutti i figli del
+    \emph{context node};
+  \item \xml{text()} \`e vero per ogni nodo \emph{testo}. \xml{child::text()}
+    seleziona i nodi testo figli del \emph{context node};
+  \item \xml{comment()} \`e vero per ogni nodo \emph{commento};
+  \item \xml{processing-instruction()} \`e vero per ogni nodo
+    \emph{processing instruction};
+  \item \xml{processing-instruction(LITERAL)} \`e vero per ogni
+    \emph{processing instruction} che ha nome uguale al valore
+    \xml{LITERAL};
+  \item \xml{node()} \`e vero per ogni nodo di ogni tipo.
+\end{itemize}
+
+Per quanto riguarda i \emph{predicati}, un \emph{axis} pu\`o essere
+\emph{discendente} che seleziona nodi nell'ordine del documento, o
+\emph{ascendente} se li seleziona nell'ordine
+inverso. \emph{ancestor}, \emph{ancestor-or-self}, \emph{preceding} e
+\emph{preceding-sibling} sono gli \emph{axis} ascendenti, gli altri
+sono discendenti.
+
+La \emph{proximity position} di un nodo membro di un \emph{node-set}
+risultante di un \emph{axis} indica la posizione di tale nodo all'interno del
+\emph{node-set}. Se l'\emph{axis} \`e discendente il \emph{node-set}
+\`e ordinato nell'ordine del documento, viceversa, se \`e ascendente, \`e ordinato in
+senso contrario.
+
+Un \emph{predicato} filtra un \emph{node-set} risultante da un
+\emph{axis} nel seguente modo: per ogni nodo del \emph{node-set}
+originale valuta l'espressione \xml{PredicateExpr} usando come
+\emph{context node} il nodo che sta valutando, come \emph{context
+  position} la \emph{proximity position} del nodo che sta valutando e
+come \emph{context size} il numero di nodi nel \emph{node-set}.
+L'espressione \xml{PredicateExpr} \`e valutata determinando \xml{Expr} e
+convertendo il risultato in un booleano. Se il risultato \`e un numero
+viene convertito in \emph{vero} se \`e uguale alla \emph{context
+  position}, in \emph{falso} altrimenti. Se \`e un \emph{node-set} \`e
+\emph{vero} se non \`e vuoto, \emph{falso} altrimenti. Se \`e una
+stringa \`e \emph{vero} se non \`e vuota, \emph{falso} altrimenti.
+
+Esistono delle utili abbreviazioni per rendere l'espressione pi\`u
+concisa e leggibile, queste abbreviazioni sono:
+\begin{itemize}
+  \item \xml{child::} pu\`o essere omesso, cosicch\'e l'espressione
+    \xml{div/a} \`e equivalente a \xml{child::div/child::a};
+  \item \xml{attribute::} pu\`o essere abbreviato in \xml{@}, ad
+    esempio\\ 
+    \xml{child::div/child::a[attribute::href="abc"]} diventa\\
+    \xml{div/a[@href="abc"]};
+  \item \xml{//} \`e l'abbreviazione di
+    \xml{/descendant-or-self::node()/}. Ad esempio \xml{//a} \`e
+    equivalente a \xml{/descendant-or-self::node()/child::a} (\`e
+    stata usata anche l'abbreviazione di \xml{child::});
+  \item \xml{.} \`e l'abbreviazione per \xml{self::node()};
+  \item \xml{..} \`e l'abbreviazione per \xml{parent::node()}.
+\end{itemize}
+
+\subsubsection{Funzioni}
+Come gi\`a detto \emph{XPath} fornisce un set di funzioni di
+\emph{core} che possono essere usate. Nella grammatica indicata prima
+\`e possibile vedere come usare le funzioni chiamate
+\abnf{FunctionCall}, comunque sia queste sono costituite da un nome,
+un valore di ritorno e un insieme di parametri.
+
+Per vedere l'elenco completo di queste funzioni di \emph{core} si
+rimanda a
+\link{http://www.w3.org/TR/xpath/\#section-Node-Set-Functions}.
+
+\subsection{XSLT}\label{sec:xslt}
+Le trasformazioni \emph{XSLT} sono espresse in \emph{XML} e viene
+usato un \emph{namespace} specifico per gli elementi che ha \emph{URI}
+\link{http://www.w3.org/1999/XSL/Transform}. Solitamente si usa il
+prefisso \xml{xsl} per tale \emph{namespace}.
+
+Come gi\`a detto in sezione \ref{sec:xsl}, queste trasformazioni
+servono per poter trasformare tramite un \emph{processore} un
+documento \emph{XML} in un documento \emph{XSL-FO}. O perlomeno questo
+era lo scopo iniziale. In realt\`a \emph{XSLT} permette di trasformare
+un generico \emph{albero sorgente} in un generico \emph{albero
+  destinazione}, anche non in formato \emph{XML}.
+
+Le trasformazioni prendono il nome di \emph{stylesheet} perch\'e,
+quando applicate per ottenere un documento \emph{XSL-FO}, funzionano
+come un foglio di stile. Gli \emph{stylesheet} sono
+composti da una serie di \emph{regole template}. Ogni \emph{regola
+  template} \`e composta da due parti:
+\begin{itemize}
+  \item un \emph{pattern} da matchare con l'\emph{albero sorgente};
+  \item un \emph{template} da istanziare come parte dell'\emph{albero
+    destinazione}.
+\end{itemize}
+
+Un template pu\`o contenere elementi che specificano parti letterali
+della struttura del
+risultante, ma pu\`o anche contenere elementi del namespace
+\emph{XSLT} che specificano istruzioni per creare frammenti
+dell'albero risultante. Durante l'istanziazione ogni istruzione \`e
+sostituita con il frammento corrispondente.
+
+Quando un template \`e istanziato, avviene rispetto ad un \emph{nodo
+  corrente} e ad una \emph{lista di nodi correnti}. Qualche istruzione
+cambia questi due valori, durante l'istanziazione di queste regole la
+\emph{lista dei nodi correnti} cambia in una nuova lista di nodi e
+ogni nodo a turno diventa il \emph{nodo corrente}. Dopo
+l'istanziazione il \emph{nodo corrente} e la \emph{lista dei nodi
+  correnti} tornano ai valori precedenti.
+
+Come gi\`a accennato, \emph{XSLT} fa uso di \emph{XPath} per
+selezionare elementi durante il processamento.
+
+\`E possibile definire uno \emph{stylesheet} \emph{XSLT} per un certo
+documento \emph{XML} direttamente all'interno di quest'ultimo, usando
+l'elemento \xml{xsl:stylesheet}. Oppure \`e possibile creare un
+documento indipendente \emph{XML} contenente esclusivamente lo
+\emph{stylesheet}, questo si ottiene usando il solito elemento
+\xml{xsl:stylesheet} come radice del documento.
+
+I nodi di \emph{input} della trasformazione vengono processati nel
+seguente modo:
+\begin{enumerate}
+\item viene processata inizialmente una lista contenente solo la radice
+  dell'albero sorgente;
+\item una lista di nodi viene processata concatenando, nell'ordine della
+  lista stessa, i nodi risultanti dal processamento di ogni nodo della
+  lista;
+\item un nodo \`e processato cercando i \emph{matching} con i
+  \emph{pattern} definiti nelle regole, scegliere il migliore se non
+  univoco e istanziare il relativo \emph{template} della regola
+  usando il nodo come \emph{nodo corrente} e la lista dei nodi
+  sorgenti come \emph{lista dei nodi correnti};
+\item un template pu\`o contenere istruzioni per selezionare una lista
+  ulteriore di nodi da processare. 
+\end{enumerate}
+\subsubsection{Patterns}
+I patterns usano la grammatica indicata nel codice
+\ref{code:patternxslt}
+\begin{code}
+  \begin{abnfblock}
+Pattern             ::= LocationPathPattern 	
+                      | Pattern '|' LocationPathPattern 	
+LocationPathPattern ::= '/' RelativePathPattern? 	
+                      | IdKeyPattern (('/' | '//') RelativePathPattern)? 	
+                      | '//'? RelativePathPattern 	
+IdKeyPattern        ::= 'id' '(' Literal ')' 	
+                      | 'key' '(' Literal ',' Literal ')' 	
+RelativePathPattern ::= StepPattern 	
+                      | RelativePathPattern '/' StepPattern 	
+                      | RelativePathPattern '//' StepPattern 	
+StepPattern         ::= ChildOrAttributeAxisSpecifier NodeTest Predicate* 	
+ChildOrAttributeAxisSpecifier ::= AbbreviatedAxisSpecifier 	
+                                | ('child' | 'attribute') '::'
+  \end{abnfblock}
+  \caption{Grammatica di un pattern \emph{XSLT}}
+  \label{code:patternxslt}
+\end{code}
+che si appoggia alla grammatica e ai tipi di dato di
+\emph{XPath}\footnote{Vedere sezione \ref{sec:xpath}\label{node:xsltvedixpath}.} per
+completarsi.
+
+Un \emph{pattern} ha la funzione di trovare un \emph{match} con un nodo
+del documento sorgente. Poich\'e il suo funzionamento \`e di fatto
+quello delle espressioni \emph{XPath}, non viene approfondito
+ulteriormente l'argomento.
+
+\subsubsection{Template}
+Un \emph{template} \`e una regola associata ad un \emph{pattern} e
+viene definita con un elemento di tipo \xml{xsl:template} che possiede
+un attributo \xml{match} che corrisponde al \emph{pattern}. Il
+contenuto dell'elemento \xml{xsl:template} rappresenta l'albero di
+output della trasformazione applicata da questa specifica regola.
+
+Un esempio di definizione di regola \`e quello del codice
+\ref{code:esempiotemplatexslt}
+\begin{code}
+  \begin{xmlblock}
+<xsl:template match="in">
+  <out/>
+</xsl:template>
+  \end{xmlblock}
+  \caption{Esempio di definizione di regola \emph{XSLT}}
+  \label{code:esempiotemplatexslt}
+\end{code}
+che, quando esiste un \emph{match} con un elemento \xml{in}, produce un
+elemento \xml{out}.
+
+Come detto prima un template pu\`o avere delle istruzioni per
+processare una ulteriore lista di nodi, tale istruzione \`e
+\xml{xsl:apply-template} con l'attributo opzionale \xml{select} che
+deve essere una \abnf{Expr} di \emph{XPath}\footnote{Vedi nota
+  \ref{node:xsltvedixpath}.}. Se \xml{select} non \`e presente vengono
+aggiunti tutti i figli del \emph{nodo corrente}. Ad esempio nel codice
+\ref{code:esempiotemplatexslt2}
+\begin{code}
+  \begin{xmlblock}
+<xsl:template match="div">
+  <blocco>
+    <xsl:apply-template select="p"/>
+  </blocco>
+</xsl:template>
+  \end{xmlblock}
+  \caption{Esempio di definizione di regola \emph{XSLT} con applicazione di regola}
+  \label{code:esempiotemplatexslt2}
+\end{code}
+quando avviene un \emph{match} con un nodo di \emph{input} \xml{div},
+vengono aggiunti alla lista di processamento tutti i \xml{p} suoi
+discendenti.
+
+La definizione dei \xml{xsl:template} prevede di indicare un attributo
+\xml{priority} con un valore numerico, che permette di identificare
+quale regola scegliere in caso di conflitti durante il \emph{matching}
+di un nodo di \emph{input}.
+
+Le definizioni dei \emph{template} danno la possibilit\`a di definire
+un attributo \xml{mode} che permette di creare una sorta di classe
+assegnandoli un certo nome. Quando un'applicazione
+\xml{xsl:apply-templates} indica anch'essa un attributo \xml{mode},
+allora i \emph{matching} dei nodi verranno scelti solo tra i template
+che presentano un attributo \xml{name} uguale.
+
+Una definizione di \emph{template} permette anche di assegnare un nome
+alla regola tramite l'attributo opzionale \xml{name}. Se un
+\emph{template} ha un nome definito, \`e possibile applicarlo direttamente senza
+\emph{matching} con l'istruzione \xml{xsl:call-template} e il suo
+attributo \xml{name} che, ovviamente, deve corrispondere al nome del
+template. Nel caso di chiamata diretta gli attributi \xml{match}, \xml{mode} e
+\xml{priority} vengono ignorati.
+
+All'interno dei \xml{xsl:template} \`e possibile indicare quale deve
+essere l'albero risultante del \emph{templete}, non solo scrivendolo
+direttamente nel contenuto della definizione come visto negli esempi
+prima, ma \`e possibile anche usare a tal scopo due istruzioni particolari:
+\xml{xsl:element} e \xml{xsl:attribute}.
+
+Inolte l'\emph{XSLT} prevede anche delle istruzioni condizionali come
+\xml{xsl:if} e \xml{xsl:choose} e altre funzionalit\`a che esulano
+dagli scopi di questo testo. Per approfondire si rimanda a
+\link{http://www.w3.org/TR/xslt}.
+%\subsection{XSL-FO}
+\end{document}

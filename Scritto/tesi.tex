@@ -1,0 +1,426 @@
+\documentclass[twoside,openright,titlepage,fleqn,
+	headinclude,11pt,a4paper,BCOR5mm,footinclude
+	]{scrbook}
+%\documentclass[a4paper,11pt]{book}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+\usepackage{graphicx}
+\usepackage{subfiles}
+\usepackage{listings}
+%\usepackage{pgf}
+\usepackage{xparse}
+\usepackage{float}
+\usepackage{color}
+%\usepackage{xcolor}
+
+%pacchetti del modello per la tesi
+%--------------------------------------------------------------
+\usepackage[square,numbers]{natbib} 
+\usepackage[fleqn]{amsmath}  
+\usepackage{dia-classicthesis-ldpkg} 
+% Options for classicthesis.sty:
+% tocaligned eulerchapternumbers drafting linedheaders 
+% listsseparated subfig nochapters beramono eulermath parts 
+% minionpro pdfspacing
+\usepackage[eulerchapternumbers,subfig,beramono,eulermath,
+	parts]{classicthesis}
+%--------------------------------------------------------------
+\usepackage{tikz}
+\usetikzlibrary{shapes, chains, scopes, shadows, positioning, arrows}
+
+%comandi per modello
+%--------------------------------------------------------------
+\newcommand{\myTitle}{Analisi e sviluppo di un crawler per la creazione di una base di conoscenza semantica del personale universitario\xspace}
+% use the right myDegree option
+\newcommand{\myDegree}{Corso di Laurea in Informatica\xspace}
+%\newcommand{\myDegree}{
+	%Corso di Laurea Specialistica in Scienze e Tecnologie 
+	%dell'Informazione\xspace}
+\newcommand{\myName}{Stefano Martina\xspace}
+\newcommand{\myMail}{stefano.martina@gmail.com}
+\newcommand{\myProf}{Elena Barcucci\xspace}
+\newcommand{\myOtherProf}{Nome Cognome\xspace}
+\newcommand{\mySupervisor}{Paolo Nesi\xspace}
+\newcommand{\myFaculty}{
+	Facolt\`a di Scienze Matematiche, Fisiche e Naturali\xspace}
+\newcommand{\myDepartment}{
+	Dipartimento di Sistemi e Informatica\xspace}
+\newcommand{\myUni}{\protect{
+	Universit\`a degli Studi di Firenze}\xspace}
+\newcommand{\myLocation}{Firenze\xspace}
+\newcommand{\myTime}{Anno Accademico 2011-2012\xspace}
+\newcommand{\myVersion}{Version 0.1\xspace}
+\newlength{\abcd} % for ab..z string length calculation
+% how all the floats will be aligned
+\newcommand{\myfloatalign}{\centering} 
+\setlength{\extrarowheight}{3pt} % increase table row height
+\captionsetup{format=hang,font=small}
+%--------------------------------------------------------------
+% Layout setting
+%--------------------------------------------------------------
+\usepackage{geometry}
+\geometry{
+	a4paper,
+	ignoremp,
+	bindingoffset = 1cm, 
+	textwidth     = 13.5cm,
+	textheight    = 21.5cm,
+	lmargin       = 3.5cm, % left margin
+	tmargin       = 4cm    % top margin 
+}
+%--------------------------------------------------------------
+
+%comando per asterismo
+\newcommand{\asterismo}{{\footnotesize \smash{% 
+    \raisebox{-.2ex}{% 
+      \setlength{\tabcolsep}{0.5pt}%
+      \begin{tabular}{@{}cc@{}}% 
+        \multicolumn2c*\\[-1.5ex] *&*% 
+      \end{tabular}}}}}
+
+%comando per impostazioni float di default
+\makeatletter
+\def\fps@figure{!htbp}
+\def\fps@table{!htbp}
+\def\fps@code{!htbp}
+\makeatother
+
+%cambia comportamento delle description
+\renewcommand{\descriptionlabel}[1]{\hspace{2em}\hspace{\labelsep}\textbf{#1}}
+
+%stili per disegnare con tikz
+\colorlet{arancio}{yellow!20!red!20}
+\colorlet{viola}{blue!10!red!5}
+
+\tikzstyle{disp}=[rectangle, rounded corners=10pt, align=center, drop shadow, text width=2cm, fill=blue!20, draw=black!50]
+\tikzstyle{db}=[cylinder, align=center, aspect=0.2, drop shadow, text width=2cm, shape border rotate=90, fill=yellow!20, draw=black!50]
+\tikzstyle{rdf}=[cylinder, align=center, aspect=0.2, drop shadow, text width=2cm, shape border rotate=90, fill=yellow!20!red!20, draw=black!50]
+\tikzstyle{web}=[rectangle, rounded corners=2pt, align=center, drop shadow, text width=2cm, fill=green!20, draw=black!50]
+\tikzstyle{weblist}=[rectangle, rounded corners=2pt, align=center, double copy shadow, text width=2cm, fill=green!20, draw=black!50]
+\tikzstyle{file}=[chamfered rectangle, align=center, drop shadow, text width=2cm, fill=black!20, draw=black!50]
+\tikzstyle{filelist}=[chamfered rectangle, align=center, double copy shadow, text width=2cm, fill=black!20, draw=black!50]
+\tikzstyle{gaz}=[tape, align=center, drop shadow, text width=2cm, shape border rotate=90, fill=blue!20, draw=black!50]
+\tikzstyle{gate}=[rectangle, rounded corners=2pt, align=center, drop shadow, text width=2cm, fill=red!20, draw=black!50]
+\tikzstyle{app}=[ellipse, align=center, drop shadow, text width=2cm, fill=red!20, draw=black!50]
+\tikzstyle{esp}=[cloud, aspect=2, align=center, drop shadow, text width=2cm, fill=blue!10, draw=black!50]
+\tikzstyle{rdfc}=[rectangle, rounded corners=5pt, align=center, drop shadow, text width=2cm, fill=green!20!red!20, draw=black!50]
+\tikzstyle{rdfclist}=[rectangle, rounded corners=5pt, align=center, double copy shadow, text width=2cm, fill=green!20!red!20, draw=black!50]
+\tikzstyle{webapp}=[ellipse, align=center, drop shadow, text width=2cm, fill=green!20, draw=black!50]
+\tikzstyle{app2}=[rectangle, rounded corners=2pt, align=center, drop shadow, text width=2cm, fill=red!20, draw=black!50]
+\tikzstyle{app3}=[rectangle, rounded corners=2pt, align=center, drop shadow, text width=2cm, fill=green!20, draw=black!50]
+\tikzstyle{app4}=[rectangle, rounded corners=2pt, align=center, drop shadow, text width=2cm, fill=arancio, draw=black!50]
+\tikzstyle{tab}=[rounded rectangle, align=center, drop shadow, text width=2cm, fill=blue!20, draw=black!50]
+\tikzstyle{man}=[circle, align=center, drop shadow, text width=2cm, fill=red!20, draw=black!50]
+\tikzstyle{label}=[rectangle, align=center, text width=2cm, rounded corners=2pt, fill=yellow!20]
+\tikzstyle{round}=[circle, align=center, drop shadow, text width=0cm, fill=blue!20, draw=black!50]
+\tikzstyle{choice}=[diamond, align=center, drop shadow, text width=2cm, fill=blue!20, draw=black!50]
+\tikzstyle{legenda}=[rectangle, rounded corners=2pt, align=center, drop shadow, fill=viola, draw=black!50]
+\tikzstyle{legendait}=[text width=10pt, text depth=10pt]
+\tikzstyle{legendalab}=[]
+
+\tikzstyle{freccia}=[->, very thick, >=stealth', draw=black!80]
+\tikzstyle{tfreccia}=[->, dash pattern=on 3pt off2pt, very thick, >=stealth', draw=black!80]
+\tikzstyle{dfreccia}=[<->, very thick, >=stealth', draw=black!80]
+\tikzstyle{dtfreccia}=[<->, dash pattern=on 3pt off2pt, very thick, >=stealth', draw=black!80]
+\tikzstyle{nfreccia}=[ very thick, >=stealth', draw=black!80]
+\tikzstyle{tnfreccia}=[dash pattern=on 3pt off2pt, very thick, >=stealth', draw=black!80]
+
+\tikzstyle{point}=[coordinate]
+\tikzstyle{vuoto}=[text width=0pt]
+
+\tikzstyle{forshadow}=[rectangle, rounded corners=2pt, drop shadow, inner sep = 0pt]
+\tikzstyle{sqltable}=[rectangle split, rounded corners=2pt, inner sep = 2pt, rectangle split part align={center, left}, rectangle split parts=#1, draw, rectangle split part fill={green!20, yellow!20}, draw=black!50]
+
+\colorlet{umlTit}{green!20}
+\colorlet{umlAtt}{yellow!20!red!20}
+\colorlet{umlMet}{yellow!20}
+\tikzstyle{umltable}=[rectangle split, rounded corners=2pt, inner sep = 2pt, rectangle split part align={center, left}, rectangle split parts=#1, draw, rectangle split part fill={umlTit, umlMet}, draw=black!50]
+
+
+\tikzstyle{coda}=[rectangle split, rectangle split part align={center}, rectangle split parts=#1, draw, fill=yellow!20, draw=black!50, drop shadow]
+
+\tikzstyle{uri}=[ellipse, drop shadow, draw=black!50, fill=green!20, very thick]
+\tikzstyle{letterale}=[rectangle, drop shadow, rounded corners=2pt, draw=black!50, fill=red!20, very thick]
+\tikzstyle{arcol}=[->, >=stealth, draw=black!80, very thick, bend right]
+\tikzstyle{labell}=[rectangle, rounded corners=2pt, fill=yellow!20, swap]
+\tikzstyle{arcor}=[->, >=stealth, draw=black!80, very thick, bend left]
+\tikzstyle{labelr}=[rectangle, rounded corners=2pt, fill=yellow!20]
+
+\tikzstyle{uriEsistente}=[ellipse, drop shadow, draw=black!50, fill=blue!20, very thick]
+\tikzstyle{uriChoice}=[rectangle, rounded corners=2pt, drop shadow, draw=black!50, fill=yellow!20, very thick, align=left]
+
+\tikzstyle{labelg}=[rectangle, rounded corners=2pt, sloped, above, fill=yellow!20]
+
+\tikzstyle{tempLab}=[rectangle, rounded corners=2pt, text width = 1.5cm, text height = 0.5cm, text depth = 0.25cm, align=center, drop shadow, fill=viola, draw=black!50]
+\tikzstyle{tempLab2}=[rectangle, rounded corners=2pt, text width = 2cm, text height = 0.5cm, text depth = 0.25cm, align=center, drop shadow, fill=viola, draw=black!50]
+\tikzstyle{tempLab3}=[rectangle, rounded corners=2pt, text width = 2cm, text height = 0.5cm, text depth = 0.75cm, align=center, drop shadow, fill=viola, draw=black!50]
+\tikzstyle{tempHid3}=[rectangle, rounded corners=2pt, text width = 2cm, text height = 0.5cm, text depth = 0.75cm ]
+\tikzstyle{tempLine}=[very thick, draw=black!80]
+\tikzstyle{tempTLine}=[dash pattern=on 3pt off2pt, very thick, draw=black!80]
+\tikzstyle{tempLineProc}=[very thick, draw=red!80]
+
+
+%ambiente per astrarre il disegno di un grafo di triple
+%senza stella usa l'unita di default di 8cm e i primi due parametri
+%opzionali come caption e label.
+%Con la stella usa il primo parametro come unita e i seguenti due come
+%caption e label
+\NewDocumentEnvironment{tgraph}{sooo}{
+  \begin{figure}
+    \begin{center}
+      \IfBooleanTF #1{
+        \IfValueTF{#2}{
+          \begin{tikzpicture}[x=#2, y=#2, auto]
+        }{
+          \begin{tikzpicture}[x=8cm, y=8cm, auto]
+        }
+      }{
+        \begin{tikzpicture}[x=8cm, y=8cm, auto]
+      }
+}{
+        \end{tikzpicture}
+   \end{center}
+   \IfBooleanTF #1{
+     \IfValueTF{#3}{\caption{#3}}{}
+     \IfValueTF{#4}{\label{#4}}{}
+   }{
+     \IfValueTF{#2}{\caption{#2}}{}
+     \IfValueTF{#3}{\label{#3}}{}
+   }
+ \end{figure}
+}
+\newcommand{\tgraphlet}[3]{
+  \node (#1) at (#2) [letterale] {#3};
+}
+\newcommand{\tgraphuri}[3]{
+  \node (#1) at (#2) [uri] {#3};
+}
+\newcommand{\tgrapharcl}[3]{
+  \draw [arcol] (#1) to node[labell]{#3} (#2);
+}
+\newcommand{\tgrapharcr}[3]{
+  \draw [arcor] (#1) to node[labelr]{#3} (#2);
+}
+
+%comando unico per tutti i codici
+\newcommand{\unicocode}[1]{\texttt{\bfseries #1}}
+\newcommand{\unicocodet}[1]{\texttt{\bfseries #1}}
+
+%definisce un nuovo ambiente per un blocco java e un nuovo comando per
+%un codice java in linea
+\lstnewenvironment{javablock}
+{
+  \lstset{language=Java, basicstyle=\small\ttfamily\bfseries,
+    breaklines=true, breakatwhitespace=false, frameround=fttt,
+    frame=trBL, backgroundcolor=\color{yellow!20}}
+}{}
+
+\newcommand{\java}[1]{\unicocode{#1}}
+%  ``\lstinline[language=Java,basicstyle=\small\ttfamily\bfseries,breaklines=true]|#1|''
+
+\newcommand{\javat}[1]{\unicocode{#1}}
+%  ``\lstinline[language=Java,basicstyle=\small\ttfamily\bfseries,breaklines=true]|#1|''
+
+\newcommand{\javai}[1]{\unicocodet{#1}}
+%  \lstinline[language=Java,basicstyle=\small\ttfamily\bfseries,breaklines=true]|#1|
+
+
+%definisce un nuovo ambiente per un blocco xml e un nuovo comando per
+%un codice xml in linea
+\lstnewenvironment{xmlblock}
+{
+  \lstset{language=XML, basicstyle=\small\ttfamily\bfseries,
+    breaklines=true, breakatwhitespace=false, frameround=fttt,
+    frame=trBL, backgroundcolor=\color{yellow!20}}
+}{}
+
+\newcommand{\xml}[1]{\unicocode{#1}}
+%  ``\lstinline[language=XML,basicstyle=\small\ttfamily\bfseries,breaklines=true]|#1|''
+
+
+\newcommand{\xmli}[1]{\unicocodet{#1}}
+%  \lstinline[language=XML,basicstyle=\small\ttfamily\bfseries,breaklines=true]|#1|
+
+
+%definisce un nuovo ambiente per un blocco abnf e un nuovo comando per
+%un codice abnf in linea
+\lstnewenvironment{abnfblock}
+{
+  \lstset{basicstyle=\small\ttfamily\bfseries, commentstyle=\color{Black},
+    breaklines=true, breakatwhitespace=false, frameround=fttt,
+    frame=trBL, backgroundcolor=\color{yellow!20}}
+}{}
+
+\newcommand{\abnf}[1]{\unicocode{#1}}
+%  ``\lstinline[basicstyle=\small\ttfamily\bfseries,breaklines=true]|#1|''
+
+
+%definisce un nuovo ambiente per un blocco ntriples e un nuovo comando per
+%un codice ntriples in linea
+\lstnewenvironment{ntriplesblock}
+{
+  \lstset{language=XML, basicstyle=\small\ttfamily\bfseries,
+    breaklines=true, breakatwhitespace=false, frameround=fttt,
+    frame=trBL, backgroundcolor=\color{yellow!20}}
+}{}
+
+\newcommand{\ntriples}[1]{\unicocode{#1}}
+%  ``\lstinline[language=XML,basicstyle=\small\ttfamily\bfseries,breaklines=true]|#1|''
+
+
+%ambiente per inserire una singola tripla
+\newcommand{\singletriple}[3]{
+  \begin{center}
+    \begin{tikzpicture}
+        \node [rectangle, rounded corners=2pt, inner sep = 0.3cm, drop shadow, draw=black!50, fill=yellow!20] {
+          \begin{tabular}{rcl}
+            #1 & #2 & #3 \\
+          \end{tabular}
+        };
+    \end{tikzpicture}
+  \end{center}
+}
+
+%ambiente per disegnare un insieme di triple
+\NewDocumentEnvironment{triples}{oo}{
+  \begin{table}
+    \begin{center}
+      \begin{tabular}{|c|c|c|}
+        \hline
+        {\bfseries Soggetto} & {\bfseries Predicato} & {\bfseries Oggetto} \\
+        \hline
+}{
+  \triple{}{}{}
+  \hline
+      \end{tabular}
+    \end{center}
+    \IfValueTF{#1}{\caption{#1}}{}
+    \IfValueTF{#2}{\label{#2}}{}
+  \end{table}
+}
+
+\newcommand{\triple}[3]{
+  #1 & #2 & #3 \\
+}
+
+%comando per inserire una immagine
+\NewDocumentCommand{\image}{ommm}{
+  \begin{figure}
+    \begin{center}
+      \begin{tikzpicture}
+        \node [rectangle, rounded corners=2pt, inner sep = 0.3cm, drop shadow, draw=black!50, fill=yellow!20] {
+          \IfNoValueTF{#1}
+                      {\includegraphics[width=13cm]{#2}}
+                      {\includegraphics[width=#1]{#2}}
+        };
+      \end{tikzpicture}
+    \end{center}
+    \caption{#3}
+    \label{#4}
+  \end{figure}
+}
+
+\NewDocumentCommand{\imager}{ommm}{
+  \begin{figure}
+    \begin{center}
+      \begin{tikzpicture}
+        \node [rectangle, rounded corners=2pt, inner sep = 0.3cm, drop shadow, draw=black!50, fill=yellow!20, rotate = 90] {
+          \IfNoValueTF{#1}
+                      {\includegraphics[height=13cm]{#2}}
+                      {\includegraphics[height=#1]{#2}}
+        };
+      \end{tikzpicture}
+    \end{center}
+    \caption{#3}
+    \label{#4}
+  \end{figure}
+}
+
+%comando per inserire un link
+\newcommand{\link}[1]{\unicocode{#1}}
+
+
+%comando per inserire un file
+\newcommand{\file}[1]{\unicocode{#1}}
+
+%comando per inserire un nome gate
+\newcommand{\gate}[1]{\unicocode{#1}}
+
+%comando per inserire dell'sql
+\newcommand{\sql}[1]{\unicocode{#1}}
+%  ``\lstinline[language=SQL,basicstyle=\small\ttfamily\bfseries,breaklines=true]|#1|''
+
+
+\newcommand{\sqlt}[1]{\unicocode{#1}}
+%  ``\lstinline[language=SQL,basicstyle=\small\ttfamily\bfseries,breaklines=true]|#1|''
+
+
+\newcommand{\sqli}[1]{\unicocodet{#1}}
+%  \lstinline[language=SQL,basicstyle=\small\ttfamily\bfseries,breaklines=true]|#1|
+
+
+%definisce un nuovo ambiente float per il codice
+\newfloat{code}{!htbp}{}
+\floatname{code}{Codice}
+
+%comando per dimensioni testo
+\newcommand{\dimg}{\tiny}
+\newcommand{\codg}[1]{\dimg \unicocodet{#1}}
+%  \lstinline[basicstyle=\dimg\ttfamily\bfseries,breaklines=true]|#1|
+
+
+\newcommand{\dims}{\scriptsize}
+\newcommand{\cods}[1]{\dims\unicocodet{#1}}
+%  \lstinline[basicstyle=\dims\ttfamily\bfseries,breaklines=true]|#1|
+
+
+%\title{
+%  \includegraphics[width=5cm]{img/logo-unifi.eps}\\[1cm]
+%  \textbf{Analisi e sviluppo di un crawler per la creazione di una base di conoscenza semantica del personale universitario}
+ %\\
+  %parte del progetto \emph{OSIM} del \emph{Distributed Systems and Internet Technology Laboratory}
+%}
+%\author{\textbf{Stefano Martina}}
+\begin{document}
+%roba del modello
+%--------------------------------------------------------------
+\frenchspacing
+\raggedbottom
+\pagenumbering{Roman}
+\pagestyle{plain}
+%--------------------------------------------------------------
+% Frontmatter
+%--------------------------------------------------------------
+\include{titlePage}
+\cleardoublepage\include{sommario}
+\cleardoublepage\include{ringraziamenti}
+\cleardoublepage\tableofcontents
+%--------------------------------------------------------------
+% Mainmatter
+%--------------------------------------------------------------
+\clearpage
+\cleardoublepage
+%\newpage
+%\thispagestyle{empty}
+%\mbox{}
+%\newpage
+%\thispagestyle{empty}
+%\mbox{}
+%--------------------------------------------------------------
+\newpage
+\pagenumbering{arabic}
+\pagestyle{scrheadings}
+\sloppy
+\part{Stato dell'arte}
+%\subfile{logica}
+\subfile{xml}
+\subfile{web_semantico}
+\subfile{gate}
+\part{Analisi e lavoro effettuato}
+%\subfile{progetto_osim}
+\subfile{analisi_crawler}
+\subfile{analisi_applicazione}
+\subfile{sviluppi_futuri}
+\include{bibliography}
+\end{document}

@@ -1,0 +1,65 @@
+\makebox[\textwidth][c]{
+  \begin{tikzpicture}[auto]
+    \matrix[row sep = 0.5cm, column sep = 2cm] {
+      %prima
+      \uncover<1->{\node[uri] (persona) {\dimt \alert<1-5,9,13>{Persona}};}\pgfmatrixnextcell
+      \uncover<13->{\node[uri] (bnode) {};}\\
+      %seconda
+      \uncover<6->{\node[uri] (insegnamento) {\dimt \alert<6-9,14>{Insegnam.}};}\pgfmatrixnextcell
+      \uncover<10->{\node[uri] (competenza) {\dimt \alert<10-14>{Compet.}};}\\
+    };
+    \begin{scope}[node distance = 2cm]
+      %nodi di persona
+      \uncover<4->{\node[uriEsistente, left = 2.3cm of persona] (dipartimento) {\dimt \alert<4>{Dipart.}};}
+      \uncover<1->{\node[uriEsistente, above left = 0.6cm and 1.5cm  of persona] (classePers) {\codt{\alert<1>{foaf:Person}}};}
+      \uncover<2->{\node[uriChoice, above left = 1.3cm and 0cm of persona] (classiPers) {
+        \codt{\alert<2>{uni:AssociateProfessor}}\\
+        \codt{\alert<2>{uni:Professor}}\\
+        \codt{\alert<2>{uni:FullResearcher}}
+        %\codt{uni:Researcher}
+      };}
+      \uncover<3->{\node[letterale, above = of persona] (nomePers) {\dimt \alert<3>{Nome}};}
+      \uncover<5->{\node[letterale, above right = 2cm and 1cm of persona] (url1Pers) {\dimt \alert<5>{Url}};}
+      \uncover<5->{\node[letterale, above right = 1.2cm and 2.4cm of persona] (url2Pers) {\dimt \alert<5>{Url}};}
+
+      %nodi di bnode
+      \uncover<13->{\node[letterale, above right = 2.5cm of bnode] (occorrenze) {\dimt \alert<13>{Occorrenze}};}
+      
+      %nodi di insegnamento
+      \uncover<6->{\node[uriEsistente, left = 1.5cm of insegnamento] (classeIns) {\codt{\alert<6>{uni:Course}}};}
+      \uncover<7->{\node[letterale, below left = of insegnamento] (nomeIns) {\dimt \alert<7>{Nome}};}
+      \uncover<8->{\node[letterale, below = of insegnamento] (urlIns) {\dimt \alert<8>{Url}};}
+
+      %nodi di competenza
+      \uncover<10->{\node[uriEsistente, below right = of competenza] (classeComp) {\codt{\alert<10>{skos:concept}}};}
+      \uncover<12->{\node[uriEsistente, below = 1.8cm of competenza] (altraClasseComp) {\codt{\alert<12>{uni:temporaryXXXStore}}};}
+      \uncover<11->{\node[letterale, right = of competenza] (nomeComp) {\dimt \alert<11>{Nome}};}
+    \end{scope}
+
+    %frecce persona
+    \uncover<9->{\draw[ufreccia] (persona) to node[labelog]{\codt{\alert<9>{uni:takeCourse}}} (insegnamento);}
+    \uncover<4->{\draw[freccia] (persona) to node[labelg]{\codt{\alert<4>{uni:isAffiliatedOf}}} (dipartimento);}
+    \uncover<1->{\draw[freccia] (persona) to node[labelg]{\codt{\alert<1>{rdf:type}}} (classePers);}
+    \uncover<2->{\draw[tfreccia] (persona) to node[labelg]{\codt{\alert<2>{rdf:type}}} (classiPers);}
+    \uncover<3->{\draw[freccia] (persona) to node[labelg]{\codt{\alert<3>{foaf:name}}} (nomePers);}
+    \uncover<5->{\draw[freccia] (persona) to node[labelg]{\codt{\alert<5>{uni:hasPageUrl}}} (url1Pers);}
+    \uncover<5->{\draw[freccia] (persona) to node[labelg]{\codt{\alert<5>{uni:hasSecondPageUrl}}} (url2Pers);}
+    \uncover<13->{\draw[ufreccia] (persona) to node[labelg]{\codt{\alert<13>{uni:hasCompetence}}} (bnode);}
+
+    %frecce bnode
+    \uncover<13->{\draw[freccia] (bnode) to node[labelg]{\codt{\alert<13>{uni:hasOccurrence}}} (occorrenze);}
+    \uncover<13->{\draw[freccia] (bnode) to node[labelog]{\codt{\alert<13>{uni:competenceType}}} (competenza);}
+
+
+    %frecce insegnamento
+    \uncover<6->{\draw[freccia] (insegnamento) to node[labelg]{\codt{\alert<6>{rdf:type}}} (classeIns);}
+    \uncover<14->{\draw[tufreccia] (insegnamento) to node[labelg, below]{\codt{\alert<14>{skos:subject}}} (competenza);}
+    \uncover<7->{\draw[freccia] (insegnamento) to node[labelg]{\codt{\alert<7>{rdfs:label}}} (nomeIns);}
+    \uncover<8->{\draw[freccia] (insegnamento) to node[labelg]{\codt{\alert<8>{uni:hasPageUrl}}} (urlIns);}
+
+    %frecce competenza
+    \uncover<12->{\draw[tfreccia] (competenza) to node[labelg]{\codt{\alert<12>{rdf:type}}} (altraClasseComp);}
+    \uncover<10->{\draw[freccia] (competenza) to node[labelg]{\codt{\alert<10>{rdf:type}}} (classeComp);}
+    \uncover<11->{\draw[freccia] (competenza) to node[labelg]{\codt{\alert<11>{skos:prefLabel}}} (nomeComp);}
+  \end{tikzpicture}
+}

@@ -1,0 +1,830 @@
+\documentclass[tesi.tex]{subfiles}
+\begin{document}
+\chapter{Analisi del crawler}
+In questo capitolo viene analizzato nel dettaglio il lavoro svolto all'interno del
+progetto \emph{OSIM} dove \`e stato svolto il lavoro, ossia lo studio
+e la realizzazione di un servizio di crawling per l'individuazione e
+l'estrazione delle competenze del personale universitario dal sito web
+dell'ateneo.
+
+\section{Il progetto \emph{OSIM}}
+Il progetto \emph{OSIM}, \emph{Open Space Innovative Mind}, ha
+l'obiettivo di creare una base di conoscenza dell'Universit\`a di
+Firenze che contenga tutte le informazioni necessarie per identificare
+le competenze in termini di ricercatori, docenti e gruppi.
+
+In figura \ref{fig:osim} \`e possibile vedere uno schema della
+struttura globale del progetto.
+\image{img/schemaOsim.eps}{Schema generale del progetto \emph{OSIM}.}{fig:osim}
+La parte di \emph{crawling} visibile a sinistra \`e quella che si
+occupa di fare \emph{data ingestion} della struttura dell'ateneo in
+termini di corsi, dipartimenti, facolt\`a, personale strutturato e
+delle competenze attribuibili ad ognuno di questi. Il processo di \emph{crawling} estrae informazioni dalle pagine
+web dell'universit\`a ed immagazzina questa conoscenza in un
+\emph{database} semantico.
+
+Questa base di dati semantica deve essere strutturata per poter essere
+interrogata dagli utenti che desiderano cercare personale con
+competenze specifiche.
+
+Il lavoro svolto e presentato nel seguente testo \`e quello di
+analizzare e sviluppare un \emph{crawler} delle competenze del
+personale realizzato in  in \emph{Java} e che si interfaccia con
+l'ontologia della base di dati semantica di \emph{OSIM}. Il
+\emph{crawling} viene gestito da un pannello di controllo realizzato
+con una pagina \emph{JSP} che si interfaccia con una \emph{Servlet}
+\emph{Java}.
+
+\section{Introduzione}
+Il crawler \`e progettato in due passaggi. Durante il primo 
+vengono estratte le parole chiave; successivamente un esperto di dominio deve effettuare
+una selezione di tali parole, scegliendo se inserirle in un
+gazetteer o in una black list. Il gazetteer scelto viene
+usato nel secondo passaggio per individuare le competenze di ciascuna
+persona, al termine di questa fase l'esperto di dominio puo'
+organizzare tali competenze in una ontologia definendo relazioni di
+tipo gerarchico. L'ontologia ottenuta pu\`o essere scaricata in
+formato \emph{3-store} o \emph{rdf/xml}.
+Analizziamo nel dettaglio le azioni descritte precedentemente:
+\begin{enumerate}
+  \item estrazione delle keyword;
+  \item creazione del gazetteer;
+  \item estrazione delle competenze;
+  \item organizzazione delle competenze.
+\end{enumerate}
+I punti 1 e 3 sono automatici, i punti 2 e 4 necessitano
+dell'intervento dell'esperto
+
+\subsection{Estrazione delle keyword}\label{sez:estrazioneKeyword}
+Il processo parte dalla pagina della lista del personale afferente ad
+un certo dipartimento (l'interfaccia utente, e quindi anche il
+crawler, sono divise per dipartimenti) e viene lanciato tramite il
+pulsante \emph{launch keyword extraction task}. Appoggiandosi al
+\emph{framework GATE} si effettua un primo passaggio di segnatura
+della pagina usando un \emph{gazetteer} con la lista precompilata del
+personale. In seguito tramite delle regole
+\emph{JAPE} vengono ricavati per ciascun nominativo il link alla rispettiva
+pagina. Ogni pagina viene poi processata
+
+Per ogni persona in modo analogo si ricava il link alla pagina di
+\emph{Penelope} che \`e quella che effettivamente ha le informazioni
+utili. Quest'ultima pagina viene aggiunta ad un elenco di pagine da
+processare, si ricavano i link alle pagine degli eventuali corsi, e si
+aggiungono questi ultimi allo stesso elenco. Una volta ricavato
+l'elenco di tutte le pagine utili del personale e dei corsi si usa
+\emph{GATE} per estrarre da queste le frasi che contengono. Non \`e
+presente l'associazione keyword-persona, visto che interessa solo 
+avere un elenco di keyword. Queste frasi vengono salvate in 
+\emph{file} temporanei.
+
+\emph{GATE} permette di riconoscere la lingua, quindi ogni
+frase viene concatenata ad un \emph{file} di frasi in lingua italiana o ad
+uno in lingua inglese. Da questi due \emph{file} vengono
+estratti i sostantivi sempre usando \emph{GATE} e vengono tradotti
+usando le \emph{api} di \emph{Google translate}. Viene inserito un
+record contenente una tripletta \emph{<keyword in italiano, keyword in
+  inglese, stato>} in una tabella di un database \emph{Mysql}. Il
+significato di \emph{stato} \`e quello di indicare nel passaggio
+successivo se la keyword \`e da aggiungere al \emph{gazetteer}, alla
+\emph{black list} o a nessun dei due.
+
+\subsection{Creazione del gazetteer}
+In questa fase l'esperto di dominio deve intervenire scegliendo le
+\emph{keyword} che ritiene pi\`u rilevanti, inserendole in un
+\emph{gazetteer}, e scartando quelle meno significative inserendole
+eventualmente in una \emph{black list}. Tutte le operazioni sono
+effettuate attraverso una interfaccia \emph{user-friendly} che
+permette di creare facilmente il \emph{gazetteer}. Il procedimento \`e semplice e
+intuitivo e non necessita di ulteriori delucidazioni.
+
+\subsection{Estrazione delle competenze}
+Questa fase viene avviata cliccando sul pulsante \emph{launch
+  competence crawler}. Ripartendo dall'elenco del personale del
+dipartimento vengono ricavati i \emph{link} alla pagina della persona,
+quella alla pagina di \emph{penelope}, e quelli dei corsi, in modo
+simile a quello visto nella sezione \ref{sez:estrazioneKeyword}. In
+seguito viene popolata l'ontologia di dominio dell'ateneo indicando per ogni persona
+l'afferenza al dipartimento e i corsi svolti. Dopodich\'e usando
+\emph{GATE} vengono segnate le keyword scelte nel passaggio
+precedente, e con delle regole \emph{JAPE} si individuano
+le competenze composte da pi\`u \emph{keyword}. Il procedimento viene
+effettuato sulla pagina della persona e su quelle dei corsi. Queste
+competenze (anche solo le keyword non composte), individuate
+nelle pagine della persona, vengono aggiunte all'ontologia delle competenze, ovviamente
+con la relazione che le collega alla persona. Per lo \emph{storage} dell'ontologia viene
+usato il \emph{framework sesame}.
+
+\subsection{Organizzazione delle competenze}
+L'ontologia delle competenze pu\`o essere organizzata da un esperto
+come una tassonomia arricchita con la relazione semantica tra
+competenze \emph{related}. Vengono mostrate due
+colonne; sulla sinistra c'\`e l'elenco delle competenze estratte nel
+passo precedente, queste possono essere trascinate una ad una nella
+colonna di destra e organizzate in modo gerarchico ad albero, ogni
+volta che viene spostata una competenza l'ontologia viene aggiornata
+aggiungendo la relazione scelta.
+
+\section{Analisi dettagliata}
+Adesso verranno descritti nel dettaglio i diversi passaggi del
+crawler. Come gi\`a detto ci sono due funzionalit\`a principali:
+Il \emph{crawling delle keyword} e il \emph{crawling delle
+  competenze}. 
+
+In figura \ref{fig:listadipartimenti}
+\image{img/listaDipartimenti.eps}{\emph{Screenshoot} della schermata iniziale.}{fig:listadipartimenti}
+\`e possibile vedere la schermata iniziale che appare subito dopo aver
+fatto il login. Questa pagina \`e costruita dalla \emph{JSP}
+\java{index.jsp} e presenta una lista di dipartimenti, con delle
+statistiche sulle varie fasi di \emph{crawling} effettuate. Per ogni
+dipartimento sono presenti anche due \emph{link}, uno chiamato
+``leggi'' e, se l'utente corrente ha i permessi per il
+dipartimento in questione, un altro chiamato ``amministra''. Entrambi
+i \emph{link} portano alla stessa pagina di amministrazione del
+dipartimento. Il primo permette solo di compiere operazioni di lettura
+delle \emph{keyword} e delle competenze. Il secondo fornisce i diritti
+per amministrare tutto il dipartimento.
+
+La pagina di amministrazione del dipartimento \`e creata dalla
+\emph{JSP} \java{userPage.jsp}, e per il layout viene usato il plugin
+\emph{jQueryUI Layout}\footnote{Vedere \cite{jqueryuilayout}.}. Tale
+pagina presenta due \emph{tabs} denominate:
+\begin{enumerate}
+\item ``Ontology manager'';
+\item ``Keys selection''.
+\end{enumerate}
+
+La prima \emph{tab} visibile in figura \ref{fig:pannelloamministrazione1}
+\image{img/pannelloAmministrazione1.eps}{\emph{Screenshoot} del
+  pannello di amministrazione, prima \emph{tab}.}{fig:pannelloamministrazione1}
+presenta una serie di pulsanti in alto che servono per poter lanciare
+le varie fasi e funzioni del \emph{crawler}, inoltre \`e divisa in
+quattro parti. In alto a sinistra \`e presente una lista di competenze
+organizzate in ordine alfabetico, queste sono il risultato della
+seconda fase di \emph{crawling} di competenze. Tali competenze possono
+essere trascinate nel \emph{quadrante} in alto a destra dove vi \`e la
+possibilit\`a di organizzarle in una ontologia delle competenze
+organizzata tramite \emph{SKOS}\footnote{Vedere
+  \cite{skos} e sezione \ref{sec:ontologia}.} in modo gerarchico. Allo \emph{SKOS} \`e possibile anche
+aggiungere elementi nuovi, non risultanti dal \emph{crawling}.
+
+Il \emph{quadrante} in basso a sinistra costituisce un'area dove vengono visualizzati tutti i messaggi
+lanciati dai processi del dipartimento in questione. Il
+\emph{quadrante} in basso a destra \`e
+costituito dalla lista di processi in coda, gi\`a eseguiti, e quello
+correntemente in esecuzione. Dalla coda \`e possibile
+eliminare i processi ancora da eseguire.
+
+La seconda \emph{tab} del pannello di amministrazione, visibile in
+figura \ref{fig:pannelloamministrazione2}
+\image{img/pannelloAmministrazione2.eps}{\emph{Screenshoot} del pannello di amministrazione, seconda \emph{tab}.}{fig:pannelloamministrazione2}
+\`e costituita da una tabella che rappresenta tutte le \emph{keyword}
+estratte alla fine dell'esecuzione della prima fase di \emph{crawling}
+per quel dipartimento.
+
+Anche in questa \emph{tab} vi sono replicati i pulsanti per lanciare
+le due fasi di \emph{crawling}, e la tabella \`e costituita da una
+serie di righe dove per ognuna \`e presente il valore della
+\emph{keyword} nel linguaggio corrente, il valore della \emph{keyword}
+negli altri linguaggi (attualmente esistono due linguaggi), il numero di occorrenze
+di tale \emph{keyword}, e lo stato attuale della \emph{keyword}: se
+\`e stata scelta per far parte del \emph{gazetteer}, se
+\`e in
+\emph{black list}, o se non \`e ancora stato deciso niente su
+questa. Il campo \emph{id} rappresenta un identificatore univoco della
+\emph{keyword}, mentre il campo \emph{lang}
+serve per poter cambiare lingua ad una \emph{keyword} che \`e stata
+classificata erroneamente. \`E possibile ordinare la visualizzazione
+delle \emph{keyword} per occorrenza sia in ordine crescente che
+decrescente.
+
+Il blocco dei bottoni, di cui \`e possibile vederne un ingrandimento
+in figura \ref{fig:bottoni}
+\image[5cm]{img/pulsanti.eps}{Dettaglio del blocco dei pulsanti}{fig:bottoni}
+\`e costituito da una serie di pulsanti che, in ordine da sinistra a
+destra, svolgono le seguenti funzioni:
+\begin{description}
+  \item[download dell'\emph{RDF Store}] permette di scaricare un file
+    in uno dei due formati \emph{N-Triples} o
+    \emph{RDF/XML}\footnote{Vedere la sezione
+      \ref{sec:serializzazioni} per i dettagli sulle
+      serializzazioni.} contenente tutto lo \emph{store} semantico. Viene scaricato sempre lo \emph{store} di tutti i
+    dipartimenti, indipendentemente da dove viene richiesto;
+  \item[lancia il \emph{crawling} delle \emph{keyword}] per il
+    dipartimento corrente, vedere la sezione \ref{sec:crawlingkey};
+  \item[lancia il \emph{crawling} delle competenze] per il
+    dipartimento corrente, vedere la sezione \ref{sec:crawlingcomp};
+  \item[lancia il processo di traduzione delle \emph{keyword}] che non
+    sono state tradotte, per qualche eventuale problema, nel corso della
+    fase di \emph{crawling} delle \emph{keyword}. Sotto al pulsante \`e
+    presente un contatore che indica in tempo reale il numero di
+    \emph{keyword} non tradotte;
+  \item[lancia il processo di traduzione delle competenze] che non
+    sono state tradotte, per qualche eventuale problema, nel corso della
+    fase di \emph{crawling} delle competenze. Sotto al pulsante \`e
+    presente un contatore che indica in tempo reale il numero di
+    competenze non tradotte;
+  \item[cancella la tabella delle \emph{keyword}] che non fanno parte
+    del \emph{gazetteer};
+  \item[cancella le \emph{keyword}] che compaiono nel \emph{gazetteer}
+    delle \emph{stop words}. Questa funzione \`e utile quando si vuole
+    aggiornare la lista di \emph{stop words} evitando di rilanciare il
+    processo di estrazione delle \emph{keyword};
+  \item[lancia il processo di pulizia dell'\emph{RDF}] che si occupa
+    di eliminare eventuali triple ridondanti o altri casi particolari
+    che si possono verificare nel corso dei processi di
+    \emph{crawling} e traduzione.
+\end{description}
+
+\subsection{Crawling delle \emph{keyword}}\label{sec:crawlingkey}
+Il \emph{crawling} delle \emph{keyword} viene lanciato dal pannello di
+amministrazione di un dipartimento cliccando sul pulsante
+corrispondente visibile in figura \ref{fig:pulsantecrawlkey}
+\image[2cm]{img/keycrawl.eps}{Pulsante per lanciare il \emph{crawling} delle keyword.}{fig:pulsantecrawlkey}
+che tramite una chiamata \emph{Javascript} alla
+\emph{servlet} esegue il metodo \java{execute} del
+gestore di questa operazione \java{OSIM\_RequestKBCommand}\footnote{Vedere la sezione \ref{sec:analisijsp} per i
+  dettagli sul funzionamento di tali chiamate.}.
+Tale metodo, che \`e il solito che gestisce la richiesta di
+\emph{crawling} di competenze, aggiunge un nuovo processo alla coda
+dei processi\footnote{Vedere la sezione \ref{sec:codaprocessi}.} e,
+quando arriva il turno di tale processo, viene eseguito un thread
+dell'oggetto \emph{runnable} descritto da
+\java{CompetenceKeyCrawler}\footnote{Vedere sezione \ref{sec:classi}\label{note:vediclassi}.}
+che \`e la stessa classe del \emph{thread} lanciato nella fase di
+\emph{crawling} delle competenze.
+
+Tale \emph{thread} verifica che l'operazione richiesta sia di
+\emph{crawling} di \emph{keyword} e quindi istanzia la classe
+\java{KeywordExtractionEngine}\footnote{Vedi nota
+  \ref{note:vediclassi}.}, e lancia il suo metodo \java{extractKey}.
+
+Questa fase comincia da una pagina del portale ``\emph{cercachi}'' con la
+lista del personale del dipartimento\footnote{Ad esempio
+  \link{http://www.unifi.it/cercachi/show.php?f=s\&codice=051400\&fonte=informatica}
+  per il dipartimento di informatica e sistemi.} di cui vogliamo
+prendere le \emph{keyword}. Tale pagina \`e possibile reperirla
+all'interno della tabella \sql{departments} del
+database\footnote{Vedere sezione \ref{sec:database}\label{note:vedidatabase}.}, dove ci sono
+memorizzate tutte le pagine di partenza.
+
+In figura \ref{fig:crawlingKey} \`e possibile vedere lo schema del
+funzionamento della prima fase.
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}[auto]
+      \node [db] (tabDip) {Tabella dipartimenti};
+      \node [web, right = 1cm of tabDip] (listaPers) {Pagina con lista persone dipartimento};
+      \node [gaz, above = 1cm of tabDip] (gazPers) {Gazetteer persone};
+      \node [app, right = 2cm of gazPers] (gate1) {Estrazione \emph{link}};
+      \node [weblist, right = 1cm of gate1] (pagine) {\emph{url} di tutte le pagine utili};
+      \node [gate, below = 1cm of pagine] (gate) {GATE};
+      \node [app, right = 1cm of pagine] (gate2) {Estrazione frasi};
+      \node [filelist, below = 1cm of gate2] (files) {File di frasi};
+      \node [app, below = 5cm of files] (gate3) {Riconoscim. lingua};
+      \node [file, left = 1cm of gate3] (fileEn) {File frasi inglesi};
+      \node [file, above = 1cm of fileEn] (fileIt) {File frasi italiane};
+      \node [file, below = 1cm of fileEn] (fileBo) {File frasi sconosciute};
+      \node [app, left = 1cm of fileEn] (gate4) {Estrazione sostantivi};
+      \node [gaz, below = 1cm of gate4] (gazStop) {Stop words};
+      \node [tab, left = 1cm of gate4] (keytab) {Tabella sostantivo lingua frequenza};
+      \node [app, below = 4cm of keytab] (trad) {Traduzione};
+      \node [db, above right = 0.25cm and 1.75cm of trad] (cache) {Cache};
+      \node [webapp, below right = 0.25cm and 1cm of trad] (google) {Google Translate};
+      \node [db, below = 1cm of trad] (keydbtab) {Tabella \emph{keyword}};
+
+      \node [legenda, below = 1cm of fileBo.south east] (leg) {
+        \begin{tikzpicture}
+          \node[db,legendait] (uno) {};
+          \node[legendalab, right = 0.1cm of uno] (unol) {Database};
+          
+          \node[gaz,legendait, below = 0.5cm of uno] (due) {};
+          \node[legendalab, right = 0.1cm of due] {Gazetteer};
+          
+          \node[web,legendait, below = 0.5cm of due] (tre) {};
+          \node[legendalab, right = 0.1cm of tre] {Pag. web};
+
+          \node[tab,legendait, below = 0.5cm of tre] (qua) {};
+          \node[legendalab, right = 0.1cm of qua] {Tabella\\in mem.};
+
+          \node[app,legendait, right = 0.5cm of unol] (cin) {};
+          \node[legendalab, right = 0.1cm of cin] {Processo};
+
+          \node[file,legendait, below = 0.5cm of cin] (sei) {};
+          \node[legendalab, right = 0.1cm of sei] {File};
+          
+          \node[webapp,legendait, below = 0.5cm of sei] (set) {};
+          \node[legendalab, right = 0.1cm of set] {Servizio\\web};
+        \end{tikzpicture}
+      };
+
+      \draw [freccia] (tabDip) -- (listaPers);
+      \draw [freccia] (listaPers) -- (gate1);
+      \draw [freccia] (gazPers) -- (gate1);
+      \draw [freccia] (gate1) -- (pagine);
+      \draw [freccia] (pagine) -- (gate2);
+      \draw [freccia] (gate2) -- (files);
+      \draw [freccia] (files) -- (gate3);
+      \draw [freccia] (gate3) -- (fileIt);
+      \draw [freccia] (gate3) -- (fileEn);
+      \draw [freccia] (gate3) -- (fileBo);
+      \draw [freccia] (fileIt) -- (gate4);
+      \draw [freccia] (fileEn) -- (gate4);
+      \draw [freccia] (gazStop) -- (gate4);
+      \draw [freccia] (gate4) -- (keytab);
+      \draw [freccia] (keytab) -- (trad);
+      \draw [dfreccia] (cache) -- (trad);
+      \draw [dfreccia] (google) -- (trad);
+      \draw [freccia] (trad) -- (keydbtab);
+
+      \draw [dfreccia] (gate) -- (gate1);
+      \draw [dfreccia] (gate) -- (gate2);
+      \draw [dfreccia] (gate) -- (gate3);
+      \draw [dfreccia] (gate) -- (gate4);
+
+    \end{tikzpicture}
+  \end{center}
+  \caption{Schema della fase di \emph{crawling} delle \emph{keyword}}
+  \label{fig:crawlingKey}
+\end{figure}
+Lo schema indica il flusso logico delle operazioni che vengono svolte
+dal processo. Il \emph{crawler} usa quattro \emph{pipe} di
+\emph{GATE} diverse, che saranno spiegate in dettaglio nella sezione
+\ref{sec:applicazionigate}.
+
+In questa prima fase il crawler si preoccupa preventivamente di
+reperire tutti i \emph{link} alle pagine utili salvandoli in un vettore, in
+seguito usando \emph{GATE} individua tutte le frasi presenti su tutte
+le pagine puntate dai \emph{link} e salva ogni frase in un file
+temporaneo. Su questi \emph{file} viene usato nuovamente
+\emph{GATE} per individuare la lingua di ogni \emph{file} e in
+seguito le frasi vengono accodate in un singolo \emph{file} di frasi
+in italiano, uno in inglese, e uno di lingua sconosciuta. Quello di
+lingua sconosciuta viene in seguito ignorato.
+
+Su questi due
+\emph{file} viene usato \emph{GATE} per individuare
+tutti i \emph{sostantivi} delle frasi che non compaiano nella lista
+delle \emph{stop words}, e per ognuno di essi viene calcolato il
+numero di occorrenze. Questi sostantivi, che rappresentano il
+possibile elenco di \emph{keyword}, vengono salvati in una tabella
+temporanea che ha le tre colonne:
+\\\vbox{\begin{itemize}
+\item keyword;
+\item lingua;
+\item occorrenze.
+\end{itemize}}
+
+Per ogni keyword di questa tabella viene calcolata la traduzione
+nell'altra lingua, avvalendosi del servizio di \emph{Google Translate}.
+Prima di accedere al servizio esterno, viene interrogata una cache
+interna composta da righe nella forma:
+\begin{itemize}
+\item valore italiano;
+\item valore inglese.
+\end{itemize}
+che viene aggiornata ogni volta che \`e necessario tradurre un valore
+non presente.
+
+Tutti i valori delle \emph{keyword}, le relative traduzioni, e le
+occorrenze nelle pagine, vengono memorizzati nella tabella del
+database relativa alle \emph{keyword} del dipartimento per il quale
+\`e stata lanciata questa fase. Oltre ai valori detti viene
+memorizzato per ogni \emph{keyword} un valore \emph{status}
+inizializzato a zero. Questo status \`e il valore che l'esperto
+modifica quando va a scegliere le \emph{keyword} da candidare per la
+seconda fase, o quelle da mettere in \emph{black list}.
+
+Vengono adesso analizzate nel dettaglio le varie parti di questa fase.
+
+\subsubsection{Estrazione \emph{link}}
+In questo punto si sfrutta \emph{GATE}, e in particolare le
+annotazioni in base ai \emph{gazetteer}, per poter definire un sottoinsieme
+    di persone su cui pu\`o essere effettuato il \emph{crawling}. Vengono
+    ricavati tutti i \emph{link} alle pagine delle persone che sono nella \emph{lista
+      del personale di un dipartimento} e che sono \emph{anche nel
+      gazetteer}. Questi link di primo livello non sono utili allo scopo
+    del crawler in quanto le pagine a cui puntano non contengono
+    informazioni utili\footnote{Sono pagine nella forma:\\
+      \link{http://www.unifi.it/cercachi/scheda.php?f=p\&codice=3718\&bol=AND\&cognome=nesi\\\&nome=paolo}.},
+    quindi per ognuna di queste pagine vengono riutilizzate delle regole \emph{JAPE},
+    per ricavare il link che punta alla pagina della persona sul portale
+    \emph{Penelope}.
+
+    Queste pagine del
+    portale \emph{Penelope}\footnote{Ad esempio:\\
+      \link{http://www.unifi.it/index.php?module=ofform\&mode=2\&cmd=1\&AA=2011\&fac=200006\\\&ord=N\&doc=3f2a3d2e36302b}.}
+    sono utili in quanto sono presenti frasi che contengono sostantivi
+    dai quali \`e possibile estrarre
+    informazioni sulle competenze della persona, ad esempio il
+    \emph{curriculum} della persona o gli interessi personali. Il loro
+    \emph{url} viene memorizzato in un vettore da
+    passare al punto successivo di estrazione delle frasi.
+
+    Nelle pagine delle
+    persone di \emph{Penelope} vi \`e una serie di \emph{link} alle pagine
+    dei corsi\footnote{Ad esempio:\\
+      \link{http://www.unifi.it/index.php?module=ofform\&mode=1\&cmd=3\&AA=2011\&fac=200006\\\&cds=B047\&pds=GEN\&afId=292585\&lan=0\&ord=N\&doc=3f2a3d2e36302b}.}
+    (sempre sul portale \emph{Penelope}), che a loro volta
+    contengono informazioni utili per il \emph{crawling} delle
+    competenze. Quindi anche l'\emph{url} di queste pagine dei corsi
+    viene aggiunto al solito vettore.
+
+    L'output di questa parte \`e un vettore
+    di \emph{url}.
+\subsubsection{Estrazione frasi}
+ In questa parte viene effettuato \emph{natural language
+      processing} tramite \emph{GATE}, vengono analizzate le pagine indicate
+    nel vettore di \emph{url} precedente e individuate le
+    frasi presenti. Ogni frase estrapolata viene memorizzata in un
+    singolo \emph{file} temporaneo.
+
+    Alla fine si ha una serie di \emph{file} contenenti una
+    singola frase, che vengono letti nella parte successiva.
+\subsubsection{Riconoscimento lingua}
+ Anche in questa parte viene usato \emph{GATE} per
+    fare \emph{natural language processing}. Per
+    ogni frase (quindi per ogni \emph{file} di input) viene
+    individuata la lingua nel quale \`e scritta. Quindi a seconda di
+    questa, viene accodata la frase in un \emph{file} di frasi in
+    italiano, oppure in uno in inglese. Se la lingua di una frase non
+    viene riconosciuta oppure se viene riconosciuta come una lingua
+    diversa dall'italiano o dall'inglese, questa viene accodata in un file di lingua
+    sconosciuta. Quest'ultimo viene ignorato ed ha funzione di \emph{debug}. Anche
+    questi \emph{file} come quelli delle frasi sono temporanei e
+    vengono cancellati dopo l'esecuzione del \emph{crawling} di
+    \emph{keyword}.
+\subsubsection{Estrazione sostantivi}
+ In questa parte vengono usate due \emph{pipe}
+    distinte di \emph{GATE} per individuare i sostantivi nelle
+    frasi. Per le frasi in inglese viene usata la \emph{pipe} standard
+    di \emph{GATE}, per quelle in italiano viene usata
+    \emph{TreeTagger}.
+
+    Queste \emph{pipe} si occupano anche di non annotare i sostantivi
+    che compaiono in un certo \emph{gazetteer} di \emph{stop words}.
+
+    Individuati ed estratti i sostantivi, questi vengono memorizzati
+    in una tabella temporanea con colonne:
+    \begin{itemize}
+    \item keyword;
+    \item lingua;
+    \item occorrenze.
+    \end{itemize}
+    Dove \emph{keyword} \`e un singolo sostantivo estratto da una
+    frase, la \emph{lingua} \`e nota sapendo da quale
+    dei due \emph{file} (quello delle frasi italiane e quello delle
+    inglesi) \`e stato estratto il sostantivo, e \emph{occorrenze} \`e
+    il numero di occorrenze di un certo sostantivo all'interno di uno
+    dei due \emph{file}.
+
+    Per la precisione la tabella temporanea \`e un \java{Hashtab}
+    \emph{Java} di due campi: un campo \java{key} che contiene una
+    stringa nel formato \java{valore@lang} con \java{valore} che
+    indica il valore
+    del sostantivo e \java{lang} che indica la lingua (attualmente
+    \java{it} o \java{en}), e un campo \java{freq} che contiene il
+    numero di occorrenze.
+\subsubsection{Traduzione}
+ Questo ultima parte si occupa di tradurre i
+    sostantivi trovati nel passaggio precedente e di unire le occorrenze
+    di eventuali doppioni in modo da avere una \emph{keyword} unica
+    per le stesse occorrenze in italiano e in inglese. Inoltre in questo
+    modo \`e possibile rendere tutto il sistema multilingua, e un
+    utente pu\`o effettuare \emph{query} sia in italiano che in
+    inglese.
+
+    La traduzione viene effettuata usando le \emph{api} del servizio
+    \emph{Google Translate} integrato con una cache interna implementata
+    con una tabella nel \emph{database} con due colonne:
+    \begin{itemize}
+    \item valore in italiano;
+    \item valore in inglese.
+    \end{itemize}
+    La cache funziona nel seguente modo: quando viene richiesta una
+    traduzione di una \emph{keyword} della tabella di \emph{input},
+    viene prima interrogata la tabella di \emph{cache}, se esiste
+    gi\`a una riga con il valore da tradurre cercato allora viene
+    usato il corrispondente valore tradotto di tale riga della
+    \emph{cache}; se non esiste una riga corrispondente viene invocato
+    il servizio di \emph{Google} e viene aggiunta una riga alla
+    tabella di \emph{cache} con i valori corrispondenti.
+
+    Essendo necessario l'uso di un servizio esterno \`e previsto un
+    meccanismo di posticipazione delle traduzioni. Nel caso in cui,per esempio, \emph{Google Translate}
+    fosse momentaneamente non disponibile, la keyword viene comunque
+    presa in considerazione, ma la sua traduzione viene impostata al
+    valore \java{TO BE TRANSLATED}. Nel pannello di amministrazione
+    \`e presente un pulsante con il relativo contatore di
+    \emph{keyword} da tradurre che lancia un nuovo tentativo di
+    traduzione di tutte le \emph{keyword} rimaste non
+    tradotte. Ovviamente prima di lanciare la seconda fase di
+    \emph{crawling} delle competenze \`e bene che non ci siano
+    \emph{keyword} non tradotte.
+
+    Le keyword con il relativo valore tradotto vengono salvate in una
+    tabella di \emph{keyword}, specifica per ogni
+    dipartimento\footnote{La tabella \`e descritta nella
+      sezione \ref{sec:tabkeyword}.}.
+
+    Questa tabella presenta le colonne:
+    \begin{itemize}
+    \item valore in italiano;
+    \item valore in inglese;
+    \item occorrenze,
+    \item \emph{status}.
+    \end{itemize}
+    I primi due valori sono il valore originale della
+    \emph{keyword} e il suo valore tradotto nell'altra lingua. Le
+    occorrenze indicano quante volte la \emph{keyword} \`e stata
+    trovata. \emph{Status} \`e il valore che indica l'azione scelta
+    dall'esperto di dominio sulla \emph{keyword} (in \emph{gazetteer}
+    o in \emph{black list}).
+
+    La tabella delle \emph{keyword} non viene
+    azzerata prima dell'esecuzione di questa fase, quindi i valori
+    preesistenti rimangono memorizzati. Nel caso in cui vi \`e una
+    richiesta di inserire una riga di una \emph{keyword} gi\`a
+    esistente nella tabella, viene semplicemente aggiornato il valore
+    delle occorrenze della \emph{keyword} e lasciato inalterato lo
+    \emph{status}.
+
+    Un'ultima considerazione \`e che esistono certe \emph{keyword} che
+    pur avendo valori diversi in una lingua, hanno la stessa
+    traduzione nell'altra, ad esempio i sostantivi inglesi ``program''
+    e ``programme'' hanno la stessa traduzione italiana
+    ``programma''. Questo problema viene risolto rendendo le
+    \emph{keyword} in questa forma effettivamente indipendenti, ad
+    esempio, i valori precedenti vengono memorizzati con le due righe
+    distinte della tabella \ref{table:esempiokeywordsuguali}.
+    \begin{table}
+      \begin{center}
+        \begin{tabular}{|c|c|c|}
+          \hline
+              {\bfseries en\_value} & {\bfseries it\_value} & {\bfseries \ldots} \\
+              \hline
+              ``program'' & ``programma'' & \ldots\\
+              ``programme'' & ``programma'' & \ldots\\
+              \hline
+        \end{tabular}
+      \end{center}
+      \caption{Esempio di \emph{keyword} diverse con lo stesso valore}
+      \label{table:esempiokeywordsuguali}
+    \end{table}
+    Queste \emph{keyword} vengono trattate come \emph{keyword} differenti
+    nonostante abbiano un valore che \`e lo stesso in entrambe.
+
+\subsection{Fase di selezione del gazetteer di \emph{keyword}}\label{sec:gazkeywords}
+Finita la fase di \emph{crawling} delle \emph{keyword} \`e necessario
+l'intervento di un esperto che decida quale deve essere il
+\emph{gazetteer} delle \emph{keyword} da prendere in considerazione
+per la seconda fase, ossia quelle che sono considerate significative
+per il personale di un certo dipartimento. Anche
+questa fase \`e divisa dipartimento per dipartimento e l'esperto
+deve agire nel pannello di configurazione di un dipartimento nella
+seconda \emph{tab} vista in figura \ref{fig:pannelloamministrazione2}
+a pagina \pageref{fig:pannelloamministrazione2}.
+
+Nella figura \ref{fig:creazionegaz}
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}[auto]
+      \node [db] (tabKey) {Tabella \emph{keyword}};
+      \node [web, right = 2cm of tabKey] (front) {Frontend pannello di amministazione};
+      \node [man, below = 1.5cm of front] (pers) {Esperto};
+      
+      \draw [dfreccia] (tabKey) -- (front);
+      \draw [dfreccia] (front) -- (pers);
+
+    \end{tikzpicture}
+  \end{center}
+  \caption{Schema della fase di creazione del \emph{gazetteer}}
+  \label{fig:creazionegaz}
+\end{figure}
+\`e possibile vedere uno schema di questa fase, dove l'esperto
+pu\`o
+cambiare lingua ad una \emph{keyword}, segnare una \emph{keyword} come
+appartenente al \emph{gazetteer} di \emph{input} della fase di
+\emph{crawling} di competenze, oppure segnarla come in \emph{black
+  list}.
+
+\subsection{Crawling delle competenze}\label{sec:crawlingcomp}
+Quando \`e stato scelto un \emph{gazetteer} di \emph{keyword} consono,
+\`e possibile lanciare la fase di \emph{crawling} di competenze
+cliccando sul pulsante in figura \ref{fig:pulsantecrawlcomp}.
+\image[2cm]{img/compcrawl.eps}{Pulsante per lanciare il \emph{crawling} delle competenze.}{fig:pulsantecrawlcomp}
+
+Il funzionamento iniziale della chiamata \`e identico a quello del
+\emph{crawling} delle \emph{keyword}. Viene fatta una chiamata
+\emph{Javascript} come spiegato in sezione \ref{sec:analisijsp}, viene aggiunto un processo in
+coda, e quando \`e il suo turno viene eseguito il \emph{thread}
+\java{CompetenceKeyCrawler}. A differenza della fase precedente il
+\emph{thread} riconosce che l'operazione \`e di \emph{crawling} di
+competenze, perci\'o istanzia la classe
+\java{CompetenceExtractionEngine} ed esegue il suo metodo \java{run}.
+
+In figura \ref{fig:crawlingComp} \`e possibile vedere uno schema del
+funzionamento di questa fase.
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}[auto]
+      \node [db] (tabDip) {Tabella dipartimenti};
+      \node [web, right = 1cm of tabDip] (listaPers) {Pagina lista persone dipartimento};
+      \node [gaz, above = 1cm of tabDip] (gazPers) {Gazetteer possibili persone};
+      \node [app, right = 2cm of gazPers] (estr) {Estrazione \emph{link}};
+      \node [tab, right = 1cm of estr] (tabella) {Tabella\\nome - url};
+      \node [round, below = 2cm of tabella] (pallino) {};
+      \node [app, below = 1cm of pallino] (analisi) {Analisi persona};
+      \node [app, below right = 0.5cm and 1cm of analisi.south] (trad) {\dimg Traduzione};
+      \node [db, right = 0.75cm of analisi] (carriera) {Tabella carriera};
+      \node [rdfclist, below = 2cm of analisi] (insegnamenti) {Istanze degli insegnamenti};
+      \node [rdfc, left = 0.5cm of insegnamenti] (persona) {Istanza della persona};
+      \node [rdfclist, right = 0.5cm of insegnamenti] (competenze) {Istanze delle competenze};
+      \node [app, text width=3cm, below right = 2cm and 0.25 of insegnamenti.south] (serializza) {Serializzazione};
+      \node [rdf, left = 1cm of serializza] (rdf) {RDF store};
+      \node [choice, vuoto, below = 1cm of serializza] (rombo) {};
+
+      \node [gate, below = 2cm of estr.east] (gate) {GATE};
+
+      \node [point, right = 0.25cm of carriera] (p) {};
+
+      \node [legenda, below = 1cm of tabDip.south east] (leg) {
+        \begin{tikzpicture}
+          \node[db,legendait] (uno) {};
+          \node[legendalab, right = 0.1cm of uno] {Database};
+          
+          \node[rdf,legendait, below = 0.5cm of uno] (due) {};
+          \node[legendalab, right = 0.1cm of due] {RDF store};
+          
+          \node[gaz,legendait, below = 0.5cm of due] (tre) {};
+          \node[legendalab, right = 0.1cm of tre] {Gazetteer};
+          
+          \node[web,legendait, below = 0.5cm of tre] (qua) {};
+          \node[legendalab, right = 0.1cm of qua] {Pag. web};
+
+          \node[tab,legendait, below = 0.5cm of qua] (cin) {};
+          \node[legendalab, right = 0.1cm of cin] {Tabella\\in mem.};
+
+          \node[app,legendait, below = 0.5cm of cin] (sei) {};
+          \node[legendalab, right = 0.1cm of sei] {Processo};
+
+          \node[rdfc,legendait, below = 0.5cm of sei] (set) {};
+          \node[legendalab, right = 0.1cm of set] {Classe\\RDF};
+        \end{tikzpicture}
+      };
+
+      \draw [freccia] (tabDip) -- (listaPers);
+      \draw [freccia] (listaPers) -- (estr);
+      \draw [freccia] (gazPers) -- (estr);
+      \draw [freccia] (estr) -- (tabella);
+      \draw [freccia] (tabella) -- (pallino);
+      \draw [freccia] (pallino) -- (analisi);
+      \draw [freccia] (carriera) -- (analisi);
+
+      \draw [freccia] (analisi) -- (persona);
+      \draw [freccia] (analisi) -- (insegnamenti);
+      \draw [freccia] (analisi) -- (trad);
+      \draw [freccia] (trad) -- (competenze);
+
+      \draw [freccia] (persona) -- (serializza);
+      \draw [freccia] (insegnamenti) -- (serializza);
+      \draw [freccia] (competenze) -- (serializza);
+      \draw [freccia] (serializza) -- (rombo);
+      \draw [freccia] (serializza) -- (rdf);
+
+      \draw [nfreccia] (rombo) -| (p);
+      \draw [freccia] (p) |- (pallino);
+
+      \draw [dfreccia] (analisi) -- (gate);
+      \draw [dfreccia] (estr) -- (gate);
+    \end{tikzpicture}
+  \end{center}
+  \caption{Schema della fase di \emph{crawling} delle competenze}
+  \label{fig:crawlingComp}
+\end{figure}
+I dettagli della traduzione sono stati omessi per motivi di
+spazio, comunque sono completamente analoghi a quelli in
+fase di \emph{crawling} di \emph{keyword}.
+
+In questa fase vengono create le istanze delle classi \emph{RDFS} che riguardano le
+persone, i corsi insegnati e le competenze. In particolare vengono create, o
+modificate, le classi di tipo:
+\begin{itemize}
+\item \xml{foaf:Person} per la persona;
+\item \xml{uni:Course} per gli insegnamenti;
+\item \xml{uni:temporaryXXXStore} per le competenze, dove \xml{XXX} sta per
+  il codice associato ad un certo dipartimento.
+\end{itemize}
+Nella sezione \ref{sec:ontologia} \`e possibile vedere nel dettaglio
+lo schema \emph{RDFS} e le relazioni tra queste istanze.
+
+Inizialmente \`e simile alla fase di estrazione delle \emph{keyword},
+vengono estratti i \emph{link} relativi alle persone di un
+dipartimento che compaiono nel \emph{gazetteer}. A differenza di
+questa, viene esplorato solo il primo \emph{link} di ogni persona e
+memorizzato in una tabella assieme al nome di quest'ultima.
+
+Le fasi di analisi della persona e di serializzazione delle classi
+vengono iterate per ogni riga di tale tabella, quindi per ogni
+persona.
+
+\subsubsection{Analisi della persona}
+La fase di analisi della persona si occupa di creare le istanze delle classi
+\emph{RDFS}, anche se non vengono memorizzate nell'\emph{RDF
+  Store}. Nello specifico vengono creati degli oggetti \emph{Java} di
+classe \java{UnifiOntologyInstance}; la memorizzazione nell'\emph{RDF
+  Store}, assieme alle propriet\`a che mettono in relazione le diverse
+istanze, avviene nella fase successiva di serializzazione.
+
+ Partendo dall'\emph{url} della pagina e dal nome della
+persona, viene richiamato il metodo \java{analyze} della classe
+\java{PersonAnalyzer} che esegue le seguenti operazioni:
+\begin{enumerate}
+\item vengono recuperate le informazioni riguardanti la persona:
+  \begin{itemize}
+  \item l'hash del codice fiscale tramite la tabella \sql{carriera};
+  \item l'indirizzo delle pagine della persona, della piattaforma
+    \emph{cercachi}, e di \emph{Penelope};
+  \item i link alle pagine degli eventuali corsi insegnati dalla
+    persona;
+  \end{itemize}
+\item viene creata una istanza della persona;
+\item Per ogni link ad un eventuale corso vengono recuperate le sue
+  informazioni dalle pagine di questi:
+  \begin{itemize}
+  \item il nome del corso;
+  \item il codice del corso;
+  \end{itemize}
+\item vengono create le istanze di tali corsi;
+\item vengono cercate le competenze su ogni pagina del corso e create
+  le loro istanze;
+\item vengono cercate le competenze sulla pagina della persona e
+  create le loro istanze.
+\end{enumerate}
+
+Il recupero dell'hash del codice fiscale serve per creare l'\emph{URI}
+della persona, ed avviene facendo una \emph{query} al \emph{database}
+usando il nome della stessa. Se la \emph{query} non torna il valore allora la
+persona viene saltata.
+
+Il recupero degli indirizzi delle pagine avviene sfruttando
+\emph{GATE}, cos\`i come gli eventuali indirizzi delle pagine dei
+corsi.
+
+L'istanza della persona viene creata usando l'\emph{hash} del codice
+fiscale come parte dell'\emph{URI}\footnote{Vedere la sezione
+  \ref{sec:ontologia} per i dettagli sugli \emph{URI} e sulle
+  propriet\`a.}, alla persona vengono assegnate le propriet\`a
+riguardanti l'indirizzo delle sue pagine, e il dipartimento di
+afferenza.
+
+Viene usato \emph{GATE} sulla pagina di \emph{Penelope} per trovare
+eventuali \emph{link} alle pagine dei corsi insegnati dalla
+persona. Ognuna di queste pagine di corsi viene analizzata
+singolarmente, viene usato \emph{GATE} per estrarre il nome del corso
+e il suo codice da usare come parte dell'\emph{URI}. Viene creata una
+istanza per tale corso assegnando le propriet\`a del suo nome e della
+sua pagina.
+
+Sempre sulla pagina del corso viene usato \emph{GATE} per trovare le
+competenze, e per ognuna di esse viene tradotto il valore con un
+sistema analogo a quello usato durante il \emph{crawling} delle
+\emph{keyword}, e viene creata l'istanza della competenza. La
+traduzione viene rieffettuata perch\'e possono essere estratte
+competenze composte da pi\`u \emph{keyword}. Viene memorizzato nell'oggetto che
+rappresenta l'istanza della competenza, anche il riferimento al corso
+dove questa \`e stata trovata.
+
+Il procedimento si ripete per tutti i corsi presenti, e infine viene
+analizzata anche la pagina di \emph{Penelope} della
+persona.
+
+\subsubsection{Serializzazione}
+Questa \`e la fase in cui le istanze create vengono effettivamente
+memorizzate nell'\emph{RDF Store} e in cui vengono anche create le
+relazioni tra queste.
+
+Le operazioni effettuate sono:
+\begin{enumerate}
+\item controlla se le competenze trovate esistono gi\`a o no;
+  questo serve per sapere se assegnare alla risorsa il tipo
+  \xml{uni:temporaryXXXStore}\footnote{Vedi sezione
+    \ref{sec:ontologia}.};
+\item scrittura nell'\emph{RDF Store} dell'istanza della persona e
+  di quelle delle competenze e dei corsi;
+\item scrittura dell'associazione tra persona e competenza usando un
+  \emph{bnode}.
+\end{enumerate}
+
+I dettagli della fase di serializzazione sono descritti meglio nella
+sezione \ref{sec:ontologia}.
+
+\subsection{Organizzazione dello \emph{SKOS}}
+Questa fase, come quella di creazione del \emph{gazetteer}, prevede
+l'intervento di un esperto. In questa fase vengono organizzate le
+competenze, estratte nella fase precedente, in un albero gerarchico,
+per descrivere la specificit\`a o la generalit\`a di una competenza
+rispetto ad un'altra.
+
+Durante la creazione dell'albero, vengono create, in maniera
+trasparente all'esperto, le opportune relazioni semantiche nello \emph{SKOS}.
+\end{document}

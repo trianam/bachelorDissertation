@@ -1,0 +1,114 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[latin1]{inputenc}
+\usepackage[italian]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{graphicx}
+
+\newcommand{\nats}{\mathbb{N}}
+\newcommand{\reals}{\mathbb{R}}
+\newcommand{\codegeneric}[1]{``\lstset{basicstyle=\ttfamily}\lstinline@#1@''}
+\newcommand{\codexml}[1]{``\lstset{basicstyle=\ttfamily, language=Xml}\lstinline@#1@''}
+\newcommand{\codeprolog}[1]{``\lstset{basicstyle=\ttfamily, language=Prolog}\lstinline@#1@''}
+\newcommand{\codexmlnb}[1]{\lstset{basicstyle=\ttfamily, language=Xml}\lstinline@#1@}
+\newcommand{\codeprolognb}[1]{\lstset{basicstyle=\ttfamily, language=Prolog}\lstinline@#1@}
+\newcommand{\filecodeprolog}[1]{\lstinputlisting[basicstyle=\ttfamily, breaklines=true, breakatwhitespace=false, numbers=left, numberstyle=\tiny, frame=single, language=Prolog]{#1}}
+
+\lstnewenvironment{blockcodexml}{\lstset{basicstyle=\ttfamily, breaklines=true, breakatwhitespace=false, numbers=left, numberstyle=\tiny, frame=single, language=Xml}}{}
+
+\newfloat{code}{!h}{}
+\floatname{code}{Codice}
+
+\title{
+  \includegraphics[width=5cm]{logo-unifi.jpg}\\[1cm]
+  \textbf{PARADIGMI DI PROGRAMMAZIONE\\relazione elaborato}
+}
+\author{\textbf{STEFANO MARTINA}}
+
+\begin{document}
+\maketitle
+\newpage
+\section{Introduzione}
+Il programma consiste in un validatore di files \emph{XML} rispetto a certi limiti sintattici che specificherò più avanti. Il programma inoltre è in grado di completare un \emph{XML} incompleto sotto certi limiti dovuti al non utilizzo della \emph{ricorsione tail}.
+
+\`E possibile fornire come input al programma, per le funzionalità di validazione e di completamento, sia un file \emph{XML} che una stringa contente direttamente il codice
+
+Per lo sviluppo ho usato l'implementazione \emph{SWI-Prolog} in ambiente \emph{Gnu Linux} e usando come editor \emph{Emacs}. Il risultato dell'elaborato consiste in una \emph{grammatica formale} anche se sono arrivato alla stesura tramite un approccio sperimentale e non dopo una formalizzazione matematica preventiva.
+\section{XML, codifica e limiti}
+L'\emph{XML} è un \emph{metalinguaggio} di \emph{markup} che definisce una sintassi per esprimere una struttura ad albero dove ogni nodo si definise \emph{tag}. La caratteristica principale è che è possibile definire una struttura personalizzata a seconda dell'utilizzo che se ne vuole fare, cosa che ne permette un uso molto eterogeneo: dalle pagine web (con l'\emph{xhtml} che è una formalizzazione in \emph{xml} dell'\emph{html}) allo scambio di dati o alla definizione di linguaggi.
+
+La codifica dei caratteri è \emph{unicode} valida in certi range, inoltre ogni carattere è possibile inserirlo con la sua corrispondente codifica decimale \codexml{\&\#...;} o esadecimale \codexml{\&\#x...;}. Ci sono dei caratteri speciali che non è possibile usare nel contenuto, ma solo nella struttura, per inserirli nel contenuto è necessario usare le entità xml illustrate nella seguente tabella \ref{tab:entita}.
+\begin{table}[!h]
+  \begin{center}
+    \begin{tabular}{|c|c|}
+      \hline Carattere & Codifica\\
+      \hline \textless & \codexmlnb{\&lt;}\\
+      \textgreater & \codexmlnb{\&gt;}\\
+      \& & \codexmlnb{\&amp;}\\
+      ` & \codexmlnb{\&apos;}\\
+      `` & \codexmlnb{\&quot;}\\
+      \hline
+    \end{tabular}
+    \caption{Entità \emph{xml}}\label{tab:entita}
+  \end{center}
+\end{table}
+
+Come già detto un codice \emph{xml} è costituito da un albero di tags con un singolo tag come radice.
+\begin{code}[!h]
+  \begin{blockcodexml}
+    <nome attributo1="valore1" attributo2="valore2" attributoX="valoreX">
+      contenuto
+    </nome>
+  \end{blockcodexml}
+  \caption{Tag generico}\label{cod:singolotag}
+\end{code}
+Ogni singolo tag è costituito come nel codice \ref{cod:singolotag}, dove \codexml{contenuto} può essere vuoto, un testo oppure una serie di altri \emph{tags}, \codexml{nome} e \codexml{attributoX} non devono contenere i caratteri: \\\codegeneric{!"#\$\%&'()*+,/;<=>?\@[\\]^`\{|\}~}, spazi, o cominciare per un numero o per \codegeneric{-} o \codegeneric{.}. Ovviamente vi possono essere un numero qualsiasi di attributi, anche nessuno. Nel caso in cui \codexml{contenuto} sia vuoto, è possibile usare una forma abbreviata come nel codice \ref{cod:abbreviato}.
+\begin{code}[!h]
+  \begin{blockcodexml}
+    <nome attributo1="valore1" attributo2="valore2" attributoX="valoreX" />
+  \end{blockcodexml}
+  \caption{Tag vuoto abbreviato}\label{cod:abbreviato}
+\end{code}
+
+Oltre alla struttura dei \emph{tags}, nello standard può essere presente anche una riga preliminare di dichiarazione definita come nel codice \ref{cod:dichiarazione}
+\begin{code}[!h]
+  \begin{blockcodexml}
+    <?xml version="1.0" encoding="UTF-8" ?>
+  \end{blockcodexml}
+  \caption{Dichiarazione}\label{cod:dichiarazione}
+\end{code}
+che deve essere necessariamente la prima e dove vi sono le informazioni sulla versione usata dello standard e sulla codifica dei caratteri.
+
+Se un documento \emph{xml} rispetta le semplici regole appena definite si dice che esso è \emph{ben formato}, oltre a questo, è possibile definire uno schema che indica la struttura e i nomi possibili dei tags per esempio come avviene nelle pagine web in \emph{xhtml} dove vi è una riga preliminare (comunque sempre dopo l'eventuale \emph{dichiarazione xml}) chiamata \emph{DTD} o \emph{Document Type Definition} tipo quella nel codice \ref{cod:dtd}.
+\begin{code}[!h]
+  \begin{blockcodexml}
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  \end{blockcodexml}
+  \caption{Esempio di DTD}\label{cod:dtd}
+\end{code}
+Se vi è la definizione dello schema allora oltre ad essere \emph{ben formato}, il documento deve essere anche \emph{valido}, ossia deve rispettare lo schema definito. Non approfondirò ulteriormente questa parte poiché nel mio programma mi occupo solo di controllare se un documento sia o meno \emph{ben formato}, ma ignoro eventuali definizioni di schema e la parte di validazione.
+
+Nel mio programma, per motivi di abbreviazione e di chiarezza del codice pongo dei limiti ulteriori al set di possibili caratteri che è possibile usare, sia nel contenuto che nei nomi, ossia restringo il set alle lettere dell'alfabeto maiuscole e minuscole e ai numeri.
+\section{Breve descrizione del programma}
+Il programma prevede quattro funzionalità di base, corrispondenti a quattro possibili \emph{goal} (notare la differenza nell'uso tra apici e virgolette):
+\begin{itemize}
+  \item\codeprolognb{controlla("stringa xml").} si ha un successo se la stringa indicata come parametro è \emph{ben formata}.
+  \item\codeprolognb{controlla_file('nomeFile.xml').} si ha un successo se il file \emph{xml} indicato come parametro è \emph{ben formato}.
+  \item\codeprolognb{completa("stringa xml").} si ha un successo se è possibile rendere \emph{ben formata} la stringa passata aggiungendoci codice prima e/o dopo (escludendo certi casi), inoltre viene visualizzato tale completamento.
+  \item\codeprolognb{completa_file('nomeFile.xml').} si ha un successo se è possibile rendere \emph{ben formato} il file indicato aggiungendoci codice prima e/o dopo (escludendo certi casi), inoltre viene visualizzato tale completamento. 
+\end{itemize}
+tali \emph{goal} unificano con le prime quattro \emph{clausole} del programma, e come si può vedere la \emph{clausola} fulcro di tutte è \codeprolog{xml} o meglio \codeprolog{xml_} definita alla linea 43 del programma, visibile nella sezione \ref{sec:codice}, che con l'ausilio delle \emph{liste differenza} cerca di dividere il codice di input in tre parti: l'eventuale \emph{intestazione}, l'eventuale \emph{DTD}, e un singolo tag. Ignorerò il modello di esecuzione che porta all'unificazione dell'\emph{intestazione} e del \emph{DTD} in quanto è molto simile a quello del tag, quindi adesso passerò nel dettaglio a quest'ultimo.
+
+Il singolo tag può unificare con una delle clausole definite alle righe: 80, 89, 97, una per un tag che contiene una lista di altri tags, una per un tag che contiene un contenuto, e una per un tag nella forma abbreviata vista prima nel codice \ref{cod:abbreviato}. Nel primo caso viene divisa la stringa in modo che al centro venga valutata una lista di tags (con la valutazione della clausola alla linea 103), circondata dall'apertura e chiusura del tag (alle linee 153 e 163) e da caratteri da ignorare come spazi, tabulatori, invio e anche i commenti (definito alla linea 109). In modo simile è definito anche il tag \emph{``foglia''} che contiene del testo invece di altri tags, al centro invece della valutazione di \codeprolog{tags} vi è quella di \codeprolog{contenuto} (alla linea 141) che ha successo se è una stringa costituita da possibili caratteri di contenuto.
+
+Per quanto riguarda le clausole per l'\emph{apertura} e \emph{chiusura} dei \emph{tags}, si nota che vi è la variabile \codeprolog{Nome} che permette il controllo sulla coerenza di questo tra l'apertura e la chiusura. Entrambe le clausole tornano vero se le corrispondenti parti di tag sono correttamente formate (con una eventuale lista di attributi in apertura).
+
+Si noti infine il modo in cui viene controllato se una stringa rispetta i possibili caratteri del possibile set, analizziamo solo il caso del nome di tag poiché più o meno gli altri casi (contenuto, attributi, etc\ldots) sono uguali. Nelle clausole di apertura e chiusura viene anche valutata (alle linee 155 e 165) la clausola \codeprolog{equal(A1-A2, Nome)} definita alla linea 190, che è vera se le stringhe \codeprolog{A1-A2} e \codeprolog{Nome} sono uguali e non nulle, inoltre per ogni carattere \codeprolog{H} viene valutata \codeprolog{carattereTag(H)} definito alla riga 238, che a sua volta torna vero se \codeprolog{H} appartiene alla stringa costituita dai possibili caratteri usabili per il nome.
+
+Come si vede per esempio anche nella clausola \codeprolog{tag} vi sono dei punti in cui la ricorsione non è \emph{tail}, cioè durante l'esecuzione scende in profondità nell'albero di valutazione e dopo deve valutare altri termini quando ritorna indietro, questo porta in certe occasioni durante la fase di \emph{completamento} ad una discesa su un ramo infinito dell'albero, e quindi ad una non risposta del programma. Un esempio di questo comportamento si può osservare nella chiamata \codeprolog{completa("</b></a>").}.
+\section{Codice}\label{sec:codice}
+\filecodeprolog{programma_per_relazione.pl}
+\end{document}

@@ -1,0 +1,74 @@
+\documentclass[tesi.tex]{subfiles}
+\begin{document}
+\chapter{Considerazioni finali e sviluppi futuri}
+L'applicazione presenta notevoli possibilit\`a di sviluppo.
+Preliminarmente provvederei ad una pulizia generale del codice che
+presenta diversi punti dove non \`e ottimizzato e che risente del
+fatto che \`e stata sviluppata da pi\`u persone in momenti diversi non
+sempre in modo coerente. Sono inoltre presenti molti frammenti di
+codice morto e classi non usate. 
+
+Spesso viene usato \emph{GATE} in punti dove non \`e molto appropriato, e le
+\emph{pipe} non sono ottimizzate per l'esecuzione
+differenziata. Inoltre non sembra molto appropriato l'utilizzo di
+\emph{GATE} per il \emph{natural language processing} in lingua
+italiana. Ho ricevuto notizie che per questo ultimo punto sono gi\`a
+state valutate delle soluzioni che verranno applicate.
+
+Un'altro punto su cui cercherei di intervenire \`e la struttura
+dell'ontologia, questa non sfrutta a pieno le possibilit\`a offerte
+dal web semantico, in particolar modo quelle offerte da \emph{OWL}. 
+
+Per quanto riguarda le possibili estensioni dell'applicazione,
+cercherei di risolvere uno dei maggiori problemi attualmente presenti:
+le fasi di \emph{crawling} dipendono fortemente dalla struttura del
+sito sul quale vengono lanciate. Questo \`e un problema complesso e
+non di facile risoluzione implica che, ogni volta che
+il sito sul quale viene lanciato il \emph{crawling} cambia struttura,
+\`e necessario mettere mano in maniera pesante al codice.
+
+Per mitigare questo problema propongo
+l'adozione di una fase di preparazione delle pagine tramite
+trasformazioni \emph{XSLT} come in figura \ref{fig:consFinXslt}.
+\begin{figure}
+  \begin{center}
+    \begin{tikzpicture}[auto]
+      \node [weblist, text width = 1.75cm] (pagine) {Pagine web};
+      \node [app, text width = 1.75cm, right = 1cm of pagine] (xslt) {Trasformaz. XSLT};
+      \node [file, text width = 1.75cm, right = 1cm of xslt] (doc) {Documento XML in forma nota};
+      \node [app, text width = 1.75cm, right = 1cm of doc] (crawl) {Crawling};
+
+      \draw [freccia] (pagine) to (xslt);
+      \draw [freccia] (xslt) to (doc);
+      \draw [freccia] (doc) to (crawl);
+    \end{tikzpicture}
+  \end{center}
+  \caption{Proposta di pre-fase}
+  \label{fig:consFinXslt}
+\end{figure}
+
+L'idea \`e di usare le potenzialit\`a delle trasformazioni \emph{XSLT}
+per trasformare l'insieme delle pagine web desiderate in un documento, o insieme
+di documenti, in formato \emph{XML} con una struttura ben definita a
+priori, di fatto si tratterebbe di creare uno \emph{stylesheet} per le
+pagine del sito. Quindi il \emph{crawler} verrebbe lanciato su questo documento
+\emph{XML} e non pi\`u direttamente sulle pagine. I vantaggi sono che, in caso di modifica alla struttura del
+sito, o anche nel caso si voglia applicare il crawling ad altri siti,
+le modifiche necessarie per rendere nuovamente operativo il programma
+si riducono alla modifica del solo schema di trasformazione
+\emph{XSLT}, senza toccare minimamente il codice \emph{Java}
+dell'applicazione.
+
+In tal senso ho anche provveduto a effettuare degli esperimenti per
+valutarne la fattibilit\`a, e questi hanno avuto risultati positivi.
+
+Un altro punto a favore di questa idea \`e che la sua attuazione
+potrebbe aprire altre vie per il futuro di questa applicazione, ad
+esempio \`e possibile immaginare la creazione di un \emph{tool} che
+aiuti nello sviluppo dello \emph{stylesheet} \emph{XSLT} applicato ad un certo sito,
+rendendo l'operazione di aggiornamento della trasformazione pi\`u
+semplice che non scrivendo da zero lo schema.
+
+Per i dettagli sulle trasformazioni \emph{XSLT} vedere la sezione
+\ref{sec:xslt}.
+\end{document}

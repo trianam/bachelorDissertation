@@ -1,0 +1,55 @@
+\makebox[\textwidth][c]{
+  \begin{tikzpicture}[auto]
+    \node [db] (tabDip) {\dimg Dipartimenti};
+    \node [web, right = 0.5cm of tabDip] (listaPers) {\dimg Lista persone};
+    \draw [freccia] (tabDip) -- (listaPers);
+    \pause
+
+    \node [gaz, above = 0.5cm of tabDip] (gazPers) {\dimg Gazetteer persone};
+    \node [app, right = 0.75cm of gazPers] (gate1) {\dimg Estr. \emph{link}};
+    \node [weblist, right = 0.75cm of gate1] (pagine) {\dimg \emph{url} pagine};
+    \node [gate, below = 1cm of pagine] (gate) {\dimg GATE};
+    \draw [freccia] (listaPers) -- (gate1);
+    \draw [freccia] (gazPers) -- (gate1);
+    \draw [freccia] (gate1) -- (pagine);
+    \draw [dfreccia] (gate) -- (gate1);
+    \pause
+
+    \node [app, right = 0.75cm of pagine] (gate2) {\dimg Estr. frasi};
+    \node [filelist, below = 1cm of gate2] (files) {\dimg File frasi};
+    \draw [freccia] (pagine) -- (gate2);
+    \draw [freccia] (gate2) -- (files);
+    \draw [dfreccia] (gate) -- (gate2);
+    \pause
+
+    \node [app, below = 1.5cm of files] (gate3) {\dimg Ricon. lingua};
+    \node [file, left = 0.75cm of gate3] (fileEn) {\dimg Frasi ing.};
+    \node [file, above = 0.25cm of fileEn] (fileIt) {\dimg Frasi ita.};
+    \node [file, below = 0.25cm of fileEn] (fileBo) {\dimg Frasi scon.};
+    \draw [freccia] (files) -- (gate3);
+    \draw [freccia] (gate3) -- (fileIt);
+    \draw [freccia] (gate3) -- (fileEn);
+    \draw [freccia] (gate3) -- (fileBo);
+    \draw [dfreccia] (gate) -- (gate3);
+    \pause
+
+    \node [app, left = 0.75cm of fileEn] (gate4) {\dimg Estr. sostantivi};
+    \node [gaz, above left = 0.5cm and 0.5cm of gate4.north] (gazStop) {\dimg Stop words};
+    \node [tab, left = 0.75cm of gate4] (keytab) {\dimg Tabella};
+    \draw [freccia] (fileIt) -- (gate4);
+    \draw [freccia] (fileEn) -- (gate4);
+    \draw [freccia] (gazStop) -- (gate4);
+    \draw [freccia] (gate4) -- (keytab);
+    \draw [dfreccia] (gate) -- (gate4);
+    \pause
+
+    \node [app, below = 0.5cm of keytab] (trad) {\dimg Traduz.};
+    \node [db, right = 0.75cm of trad] (cache) {\dimg Cache};
+    \node [webapp, below right = 0.25cm and 1cm of trad] (google) {\dimg Google};
+    \node [db, below = 0.5cm of trad] (keydbtab) {\dimg \emph{Keyword}};  
+    \draw [freccia] (keytab) -- (trad);
+    \draw [dfreccia] (cache) -- (trad);
+    \draw [dfreccia] (google) -- (trad);
+    \draw [freccia] (trad) -- (keydbtab);  
+  \end{tikzpicture}
+}

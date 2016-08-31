@@ -1,0 +1,1165 @@
+\documentclass[tesi.tex]{subfiles}
+\begin{document}
+\chapter{Web semantico}
+Il web semantico nasce dalla necessit\`a di rendere i contenuti in rete
+disponibili non solo agli esseri umani, ma di cercare di renderli
+accessibili anche alle macchine. 
+
+Attualmente la maggior parte dell'informazione contenuta nel web \`e
+concepita principalmente per essere fruita dagli
+esseri umani, se io voglio sapere quali sono i corsi di un certo
+professore devo andare sulla sua pagina web, cercare la sezione
+insegnamenti ed elaborare il testo. Se volessi far fare lo stesso
+lavoro ad una macchina dovrei prevedere tecniche di intelligenza
+artificiale e di \emph{NLP} (Natural Language Processing). Il web
+semantico cerca di fornire un'alternativa all'uso di questi mezzi
+agendo direttamente all'origine, ossia organizzando il contenuto
+informativo di una certa pagina in modo da rendere un programma in
+grado di comprenderne il contenuto semantico senza effettuare alcun
+processo sul testo. Un programma quindi potrebbe direttamente venire a
+conoscenza della relazione che intercorre tra un certo professore e i
+corsi da lui insegnati.
+
+Il \emph{web semantico} \`e sostenuto dal
+\emph{W3C}\footnote{L'indirizzo del gruppo specifico che si occupa di
+  web semantico \`e: http://www.w3.org/2001/sw/.} ed \`e stato promosso
+inizialmente da \emph{Tim Berners Lee}. 
+
+\section{Visione d'insieme}\label{sec:visione-insieme}
+Nascendo come evoluzione del web come attualmente lo conosciamo, il
+web semantico riprende alcuni concetti ad esso associati, nel
+dettaglio:
+\begin{itemize}
+\item ognuno pu\`o inserire qualsiasi tipo di contenuto ed
+  informazione e pu\`o contribuire alla creazione della conoscenza
+  per un certo argomento;
+\item vige l'ipotesi del mondo aperto, ossia il fatto di non trovare
+  alcuna sentenza su un dato argomento non implica la negazione di
+  questa sentenza;
+\item la stessa entit\`a pu\`o essere chiamata con nomi diversi, ad
+  esempio a seconda di chi ne parla.
+\end{itemize}
+Nella progettazione del web semantico \`e stato deciso di tenere in
+considerazione questi punti, cosicch\'e potesse essere
+\emph{facilmente} integrato all'interno della struttura esistente.
+
+Gli standard del web semantico sono organizzati a \emph{strati} con un
+livello crescente di \emph{espressivit\`a}, nel senso che ogni strato
+fornisce un linguaggio in grado di modellare concetti in domini
+diversi e di complessit\`a crescente, inoltre ogni linguaggio basa la sua
+esistenza su quello dello strato precedente. Questi strati sono:
+\begin{description}
+\item[RDF] \emph{Resource Description Framework}, \`e il \emph{layer} di base, questo permette di
+  esprimere qualsiasi sentenza di base e fornisce un modello comune
+  per farlo;
+\item[RDFS] \emph{RDF Schema Language}, \`e un linguaggio che permette
+  l'espressivit\`a tipica dei linguaggi ad oggetti, permettendo di
+  organizzare \emph{classi}, \emph{sottoclassi} e \emph{propriet\`a};
+\item[OWL] \emph{Web Ontology Language}, fornisce la potenza della
+  logica (descrittiva) al web semantico aggiungendo capacit\`a di
+  \emph{reasoning}.
+\end{description}
+Di seguito verranno analizzati dettagliatamente tutti questi livelli. \`E bene sapere
+anche che, oltre a questi, esistono altri livelli, per esempio esiste
+\emph{RDFS-Plus} che \`e un sottoinsieme di \emph{OWL} e quindi un
+livello intermedio tra \emph{RDFS} e \emph{OWL}. Inoltre, essendo una
+tecnologia in fase di sviluppo, esistono anche livelli previsti ma ancora non
+esistenti. In figura \ref{fig:stackSemantico} si pu\`o vedere lo
+stack cos\`i come progettato da \emph{Tim Berners Lee}, la linea
+tratteggiata divide la parte realizzata (inferiore) da quella non
+implementata (superiore).
+\image{img/semantic-web-stack.eps}{Stack web semantico}{fig:stackSemantico}
+Questi strati non sono da considerarsi livelli nettamente separati
+gli uni dagli altri, \`e
+possibile immaginarli come strutture che aumentano le funzionalit\`a di
+un'unica entit\`a.
+I tre strati inferiori appartengono alle tecnologie del web
+preesistenti, non
+strettamente collegate con il web semantico ma su cui esse si
+appoggiano:
+\begin{description}
+\item[URI] \emph{Uniform Resource Identifier} come dice il nome
+  permettono di identificare univocamente una risorsa nel web,
+  successivamente verrà analizzato dettagliatamente il loro uso nel web semantico;
+\item[Unicode] \`e la codifica dei caratteri;
+\item[XML] \emph{eXtensible Markup Language} \`e un linguaggio di
+  \emph{markup} che permette la creazione di documenti strutturati.
+\end{description}
+In realt\`a \emph{RDF} non si basa necessariamente su \emph{XML} e
+neppure su \emph{Unicode} in
+quanto esistono anche rappresentazioni alternative che verranno descritte in
+seguito nel dettaglio.
+
+Brevemente, le parti non ancora implementate sono:
+\begin{description}
+\item[Rules] permetteranno di aggiungere il supporto per le regole, in
+  pratica permetteranno di ampliare la \emph{logica descrittiva} di
+  \emph{OWL} rendendola (circa) una \emph{logica a clausole di Horn};
+\item[Cryptography] aggiunger\`a il supporto alla crittografia per
+  verificare le fonti;
+\item[Trust] verificher\`a l'affidabilit\`a delle sentenze derivate
+  verificando le fonti e basandosi sulla \emph{logica formale};
+\item[User interface] sar\`a l'interfaccia utente che permetter\`a
+  agli umani l'uso delle applicazioni web semantiche.
+\end{description}
+
+Per quanto riguarda \emph{SPARQL}, esso \`e un linguaggio di quering e
+serve per poter interrogare i dati basati su \emph{RDF}.
+
+\section{Resource Description Framework (RDF)}\label{sec:rdf}
+L'\emph{RDF} indica il modo in cui i dati o meglio le \emph{risorse} e
+le relazioni tra di esse
+vengono rappresentate. Con risorsa si pu\`o intendere qualsiasi cosa
+in quanto \emph{RDF} \`e stato pensato per avere un alto potere
+descrittivo. I concetti base dell'\emph{RDF} sono gli \emph{URI} e le
+\emph{triple}.
+Degli uri e dei namespaces abbiamo gi\`a parlato nella sezione
+\ref{sec:urienamespaces}, e abbiamo anche parlato della sintassi
+\emph{qname}. Nell'\emph{RDF} (perlomeno nelle sue serializzazioni
+\emph{XML/RDF} e \emph{N3}
+che saranno analizzate successivamente nella sezione \ref{sec:serializzazioni})
+si possono usare i \emph{namespaces} e la
+sintassi \emph{qname} in modo assolutamente analogo a quello dell'\emph{XML}.
+
+Sia l'\emph{RDF} che l'\emph{RDFS} che \emph{OWL} prevedono dei
+\emph{namespaces}, questi sono rispettivamente:
+\begin{itemize}
+  \item \xml{http://www.w3.org/1999/02/22-rdf-syntax-ns\#};
+  \item \xml{http://www.w3.org/2000/01/rdf-schema\#};
+  \item \xml{http://www.w3.org/2002/07/owl\#}.
+\end{itemize}
+Quando in seguito verrano citati i prefissi \xml{rdf:}, \xml{rdfs:}
+e \xml{owl:}, se non diversamente specificato, dovranno essere
+considerati prefissi mappati ai sudetti \emph{namespaces}.
+
+\subsection{Triple}
+Cos\`i come gli \emph{URI} rappresentano le risorse, le \emph{triple}
+implementano le relazioni che intercorrono tra di esse e le
+propriet\`a che esse hanno. Queste triple in pratica rappresentano
+delle sentenze,
+concettualmente assumono la forma di tre valori ordinati che prendono in
+prestito la terminologia dalla grammatica: \emph{soggetto},
+\emph{predicato} e \emph{oggetto}. Il \emph{soggetto} si riferisce ad
+una specifica risorsa quindi deve essere indicato con un \emph{URI},
+il \emph{predicato} indica la propriet\`a che la tripla descrive e anche
+questa deve essere indicata univocamente con un \emph{URI},
+l'\emph{oggetto} \`e il valore della propriet\`a, questo pu\`o essere
+sia un'altra risorsa (quindi un \emph{URI}) oppure un letterale.
+
+Un modo per rappresentare e comprendere meglio un insieme di triple
+\`e quello di disegnare un grafo orientato facendo in modo che i
+soggetti e gli oggetti siano i nodi del grafo (distinguendo
+gli oggetti che sono \emph{URI} da quelli letterali) e tanti archi
+quante sono le triple, orientati da soggetto ad oggetto.
+Ad esempio: volendo indicare delle sentenze riguardo ad un
+professore, innanzitutto si deve indicare il soggetto ed i
+predicati con degli uri, poi si pu\`o usare
+\xml{http://www.unifi.it/rdf/namespace\#} o qualcosa di simile
+come namespace per gli \emph{URI} e si indica in seguito con il
+prefisso \xml{unifi}. Si crea cos\`\i la prima tripla dove
+vengono usati i \emph{qnames} per chiarezza e compattezza, anche se questi
+non potranno essere usati in tutte le
+serializzazioni di \emph{RDF}; i letterali invece vanno racchiusi
+tra virgolette.
+\begin{triples}[Esempio di tripla][tab:esempioTripla]
+  \triple{unifi:mario-rossi}{unifi:nome}{``Mario Rossi''}
+\end{triples}
+Ne risulta che la tripla indicata nella tabella \ref{tab:esempioTripla}
+pu\`o essere rappresentata semplicemente con il grafo in figura
+\ref{fig:esempioTripla}.
+\begin{tgraph}[Esempio grafo tripla][fig:esempioTripla]
+  \tgraphuri{n1}{0,0}{unifi:mario-rossi}
+  \tgraphlet{n2}{1,0}{``Mario Rossi''}
+  \tgrapharcl{n1}{n2}{unifi:nome}
+\end{tgraph}
+
+Viene elaborato di seguito un set pi\`u sostanzioso di quello
+precedente. Se si vuole rappresentare delle informazioni su
+del personale di un certo dipartimento, per esempio, si indica per
+ognuno il nome, il ruolo e il
+dipartimento di afferenza. Per quanto riguarda invece il dipartimento,
+si indica il nome. Vengono definiti
+i seguenti namespace per poter usare la forma compatta:
+\xml{unifi="http://www.unifi.it/rdf/unifi\#"},
+\xml{prof="http://www.unifi.it/rdf/prof\#"},
+\xml{dip="http://www.unifi.it/rdf/dip\#"}.
+Le \emph{propriet\`a} della persona sono rispettivamente:
+\xml{unifi:ha-nome}, \xml{unifi:ha-ruolo} e
+\xml{unifi:afferisce-a}. La propriet\`a del dipartimento, usando lo stesso \emph{namespace} di quelle della
+persona, è \xml{unifi:ha-nome}. Come
+\emph{URI} delle persone e dei dipartimenti vengono usati
+\xml{prof:nome-cognome} e \xml{dip:nome}. Viene cos\`i costruita la
+tabella \ref{tab:tripleProf},
+\begin{triples}[Triple dei professori e dipartimenti][tab:tripleProf]
+  \triple{prof:mario-rossi}{unifi:ha-nome}{``Mario Rossi''}
+  \triple{prof:mario-rossi}{unifi:ha-ruolo}{``Professore''}
+  \triple{prof:mario-rossi}{unifi:afferisce-a}{dip:sisinfo}
+  \triple{prof:paolo-verdi}{unifi:ha-nome}{``Paolo Verdi''}
+  \triple{prof:paolo-verdi}{unifi:ha-ruolo}{``Ricercatore''}
+  \triple{prof:paolo-verdi}{unifi:afferisce-a}{dip:sisinfo}
+  \triple{prof:franco-neri}{unifi:ha-nome}{``Franco Neri''}
+  \triple{prof:franco-neri}{unifi:ha-ruolo}{``Professore''}
+  \triple{prof:franco-neri}{unifi:afferisce-a}{dip:chimica}
+  \triple{dip:sisinfo}{unifi:ha-nome}{``sistemi e informatica''}
+  \triple{dip:chimica}{unifi:ha-nome}{``Chimica''}
+\end{triples}
+e si pu\`o notare che vi sono rappresentate le triple riguardanti tre persone e due
+dipartimenti, per maggiore chiarezza viene mostrato il grafico corrispondente a
+queste triple in figura \ref{fig:tripleProf}.
+\begin{tgraph}[Grafo delle triple dei professori e dipartimenti][fig:tripleProf]
+  \tgraphuri{mario-rossi}{0,0}{prof:mario-rossi}
+  \tgraphuri{paolo-verdi}{0,1}{prof:paolo-verdi}
+  \tgraphuri{franco-neri}{0,2}{prof:franco-neri}
+  \tgraphuri{sisinfo}{0.75,0.5}{dip:sisinfo}
+  \tgraphuri{chimica}{0.75,1.5}{dip:chimica}
+  \tgraphlet{mario-rossi-nome}{-0.2,0.50}{``Mario Rossi''}
+  \tgraphlet{mario-rossi-ruolo}{0.2,0.50}{``Professore''}
+  \tgraphlet{paolo-verdi-nome}{-0.2,1.5}{``Paolo Verdi''}
+  \tgraphlet{paolo-verdi-ruolo}{0.2,1.5}{``Ricercatore''}
+  \tgraphlet{franco-neri-nome}{-0.2,2.5}{``Franco Neri''}
+  \tgraphlet{franco-neri-ruolo}{0.2,2.5}{``Professore''}
+  \tgraphlet{sisinfo-nome}{1,0.75}{``Sistemi e informatica''}
+  \tgraphlet{chimica-nome}{1,1.75}{``Chimica''}
+  \tgrapharcr{mario-rossi}{mario-rossi-nome}{unifi:ha-nome}
+  \tgrapharcl{mario-rossi}{mario-rossi-ruolo}{unifi:ha-ruolo}
+  \tgrapharcr{paolo-verdi}{paolo-verdi-nome}{unifi:ha-nome}
+  \tgrapharcl{paolo-verdi}{paolo-verdi-ruolo}{unifi:ha-ruolo}
+  \tgrapharcr{franco-neri}{franco-neri-nome}{unifi:ha-nome}
+  \tgrapharcl{franco-neri}{franco-neri-ruolo}{unifi:ha-ruolo}
+  \tgrapharcl{mario-rossi}{sisinfo}{unifi:afferisce-a}
+  \tgrapharcr{paolo-verdi}{sisinfo}{unifi:afferisce-a}
+  \tgrapharcr{franco-neri}{chimica}{unifi:afferisce-a}
+  \tgrapharcl{sisinfo}{sisinfo-nome}{unifi:ha-nome}
+  \tgrapharcl{chimica}{chimica-nome}{unifi:ha-nome}
+\end{tgraph}
+
+Una delle caratteristiche pi\`u utili dell'\emph{RDF} \`e la
+possibilit\`a di \emph{combinare} dati da fonti diverse. Poich\'e
+gli \emph{URI} identificano univocamente una
+risorsa, si possono creare delle triple facendo riferimento a degli \emph{URI}
+anche esterni al sistema. Ad esempio, se da qualche parte \`e
+presente un \emph{RDF} che rappresenta l'elenco delle citt\`a
+italiane, \`e possibile usare gli uri presenti per aggiungere delle
+informazioni alle triple della figura \ref{fig:tripleProf} sulla
+residenza dei professori o sulla sede dei dipartimenti. Tutto ci\`o
+\`e conforme al principio enunciato nella sezione
+\ref{sec:visione-insieme} secondo cui ognuno pu\`o aggiungere
+informazione riguardante un concetto. Gli \emph{URI} garantiscono che
+ci si riferisca effettivamente alle stesse cose in punti diversi
+ e l'estrema flessibilit\`a dell'\emph{RDF} permette di
+creare ed estendere nuovi concetti quando necessario.
+
+\subsection{Blank nodes (bnodes)}\label{sec:bnodes}
+I \emph{blank nodes}, anche detti \emph{bnodes}, servono ad indicare un
+soggetto od un oggetto quando non si hanno informazioni su di esso, o
+quando si desidera che tale entit\`a non abbia un \emph{URI}. 
+Alcune serializzazioni permettono anche di usare i
+\emph{bnodes} per il predicato, ma non verr\`a trattato il caso in
+quanto non \`e di nessuna utilit\`a pratica.
+
+Nella pratica i \emph{bnode} offrono la possibilit\`a di creare una o pi\`u
+triple che hanno come \emph{soggetto} o \emph{oggetto} nessun uri,
+nella sintassi si indica un \emph{bnode} con il prefisso
+\xml{\_} seguito da un eventuale identificatore che indicher\`a univocamente un certo
+\emph{bnode}. Concettualmente i \emph{bnodes} possono essere
+interpretati come delle variabili quantificate esistenzialmente nella
+logica dei predicati del primo ordine, le triple della tabella
+\ref{tab:bnodes}
+\begin{triples}[Esempio di \emph{bnode}][tab:bnodes]
+  \triple{\_:X}{unifi:ha-nome}{``Mario Rossi''}
+  \triple{\_:X}{unifi:ha-ruolo}{``Professore''}
+  \triple{\_:X}{unifi:afferisce-a}{\_:Y}
+  \triple{\_:Y}{unifi:ha-nome}{``sistemi e informatica''}
+\end{triples}
+sono estratte da quelle viste prima nella tabella \ref{tab:tripleProf}
+a cui sono stati sostituiti gli uri delle \emph{entit\`a} che
+rappresentavano il professore Mario Rossi e il dipartimento di
+sistemi e informatica con dei \emph{bnodes}. Adesso il significato
+che assumono \`e che ``esiste un \emph{qualcosa} che ha nome
+Mario Rossi e ruolo Professore che afferisce a \emph{qualcos'altro} che
+ha nome sistemi e informatica''.
+
+I \emph{bnodes} sono molto usati in \emph{OWL} per la loro affinit\`a
+con le variabili quantificate esistenzialmente.
+
+\subsection{Serializzazioni}\label{sec:serializzazioni}
+In questa sezione viene trattata la rappresentazione pratica dei dati
+denominati nelle sezioni precedenti come triple, per poterli
+scambiare e memorizzare.
+Esistono tre tipi di serializzazioni: \emph{N-Triples}, \emph{Notation 3 RDF} e \emph{RDF/XML}.
+
+\subsubsection{N-Triples}
+ \`E la forma pi\`u semplice e consiste in un
+    susseguirsi di triple delimitate da un carattere \ntriples{.}. Gli
+    \emph{URI} si indicano racchiudendoli tra \ntriples{<...>}, i \emph{bnodes}
+    esattamente come nella sezione \ref{sec:bnodes},
+    ossia \ntriples{\_:X}, i letterali invece si racchiudono tra
+    virgolette \ntriples{\"...\"}. Ad esempio, le triple della
+    tabella \ref{tab:bnodes} sono serializzate in \emph{ntriples} come
+    nel blocco seguente:
+    \begin{ntriplesblock}
+_:X <http://www.unifi.it/rdf/unifi#ha-nome> "Mario Rossi" .
+_:X <http://www.unifi.it/rdf/unifi#ha-ruolo> "Professore" .
+_:X <http://www.unifi.it/rdf/unifi#afferisce-a> _:Y .
+_:Y <http://www.unifi.it/rdf/unifi#ha-nome> "sistemi e informatica" .
+    \end{ntriplesblock}
+    \`E da notare che la notazione \emph{n-triples} non permette l'uso
+    dei \emph{qnames}.
+
+ \subsubsection{Notation 3 RDF}
+Anche abbreviata con \emph{N3}, \`e una
+    serializzazione pi\`u compatta di \emph{n-triples}, ideata da
+    \emph{Tim Berners Lee}. Estende la sintassi
+    \emph{n-triples} aggiungendovi scorciatoie. Innanzitutto permette l'uso dei
+    \emph{qnames} e per dichiararli si ricorre alla seguente sintassi:
+    \begin{ntriples}
+@prefix unifi:<http://www.unifi.it/rdf/unifi\#>
+    \end{ntriples}
+    poi, una volta dichiarati, possono essere usati nella scrittura
+    delle triple con la solita sintassi:
+    \begin{ntriplesblock}
+_:X unifi:ha-nome "Mario Rossi" .
+_:X unifi:ha-ruolo "Professore" .
+_:X unifi:afferisce-a _:Y .
+_:Y unifi:ha-nome "sistemi e informatica" .
+    \end{ntriplesblock}
+	
+    Un'altra particolarit\`a \`e che \emph{N3} permette di raggruppare
+    le triple che hanno lo stesso soggetto, separando le coppie di
+    predicato e di oggetto con il carattere \ntriples{;} nel seguente modo:
+    \begin{ntriplesblock}
+_:X
+      unifi:ha-nome "Mario Rossi" ;
+      unifi:ha-ruolo "Professore" ;
+      unifi:afferisce-a _:Y ;
+_:Y unifi:ha-nome "sistemi e informatica" .
+    \end{ntriplesblock}
+	
+    Inoltre \emph{N3} permette, allo stesso modo, di raggruppare triple che hanno il
+    solito soggetto e il solito predicato, separando i soggetti con
+    delle \ntriples{,} nel seguente modo:
+    \begin{ntriplesblock}
+_:X unifi:ha-figlio
+      "Mario Rossi" ,
+      "Paolo Bianchi" .
+    \end{ntriplesblock}
+	
+    \emph{N3} mette a disposizione anche delle scorciatoie, per esempio
+    \ntriples{rdf:type} pu\`o semplicemente essere indicata con
+    \ntriples{a}.
+	
+ \subsubsection{RDF/XML}
+ \`E la notazione pi\`u usata in quanto sfrutta il ben
+    noto e supportato \emph{XML} per la rappresentazione delle
+    triple. Per meglio comprendere la sintassi \`e utile partire dalla
+    rappresentazione a grafo dell'\emph{RDF} come gi\`a visto prima,
+    usiamo a tal proposito il grafo della figura \ref{fig:grafoxmlrdf}.
+    \begin{tgraph}[Grafo di esempio per
+        \emph{RDF/XML}][fig:grafoxmlrdf]
+      \tgraphuri{mario}{0.5,0.8}{prof:mario-rossi}
+      \tgraphuri{bnode}{0.25,0.4}{ }
+      \tgraphlet{nome}{0.75,0.4}{``Mario Rossi''}
+      \tgraphuri{tipo}{0,0}{unifi:articolo}
+      \tgraphlet{titolo}{0.5,0}{``Una pubblicazione''}
+      \tgrapharcl{mario}{bnode}{unifi:ha-pubblicazione}
+      \tgrapharcr{mario}{nome}{unifi:ha-nome}
+      \tgrapharcl{bnode}{tipo}{unifi:tipo}
+      \tgrapharcr{bnode}{titolo}{unifi:titolo}
+    \end{tgraph}
+    Dove il nodo vuoto \`e un \emph{bnode}\footnote{Senza nessuna
+      label in quanto non ci interessa.}, e i prefissi corrispondono
+    a:
+    \begin{tabular}{rcl}
+      prof & = & ``http://www.unifi.it/rdf/prof\#''\\
+      unifi & = & ``http://www.unifi.it/rdf/namespace\#''\\
+    \end{tabular}
+
+    Seguendo le \emph{syntax specification}
+    dell'\emph{RDF/XML}\footnote{Visibili all'indirizzo
+      \link{http://www.w3.org/TR/rdf-syntax-grammar/}.} vengono trascritti
+    nell'\emph{XML} i nodi \emph{non letterali} del grafo come elementi
+    \xml{rdf:Description} e gli archi come elementi con il loro nome; 
+    convenzionalmente si indicano i primi come \emph{elementi nodo} e i secondi
+    come \emph{elementi propriet\`a}. \`E necessario trascriverli facendo
+    in modo che ogni \emph{elemento propriet\`a} sia figlio
+    dell'\emph{elemento nodo} che rappresenta l'origine dell'arco e
+    padre dell'\emph{elemento nodo} che rappresenta la
+    destinazione dell'arco. 
+	
+	Se l'arco finisce in un \emph{letterale} allora
+    l'\emph{elemento propriet\`a} che rappresenta l'arco non \`e padre
+    di un elemento, ma contiene il testo del \emph{letterale}. Gli \emph{uri} dei
+    nodi, quando sono presenti\footnote{Ossia quando non sono bnodes.}, sono
+    indicati con un attributo di tipo \xml{rdf:about} dentro
+    l'\emph{elemento nodo} che li rappresenta. 
+	
+	Gli elementi possono
+    essere sia rappresentati sequenzialmente, svincolati gli uni dagli
+    altri, che messi in cascata, raggruppandoli gli uni dentro agli
+    altri. Poich\`e l'\emph{XML} necessita di una
+    radice \`e previsto un elemento \xml{rdf:RDF} da usare a tal
+    proposito. Tale elemento \`e opzionale nel caso in cui il documento
+    contenga gi\`a una sola radice, comunque un uso di tale elemento
+    pu\`o essere anche quello di indicare i \emph{namespaces} che
+    servono per i \emph{prefissi} dei \emph{qnames} (ed anche il
+    \emph{namespace} \xml{rdf}).
+    
+    Il grafo della figura \ref{fig:grafoxmlrdf}
+    pu\`o essere serializzato nel seguente modo:
+    \begin{xmlblock}
+<?xml version="1.0"?>
+<rdf:RDF
+    xmlns:rdf=
+      "http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+    xmlns:unifi=
+      "http://www.unifi.it/rdf/namespace#">
+  <rdf:Description 
+      rdf:about=
+        "http://www.unifi.it/rdf/prof#mario-rossi">
+    <unifi:ha-pubblicazione>
+      <rdf:Description>
+        <unifi:tipo>
+          <rdf:Description 
+            rdf:about=
+              "http://www.unifi.it/rdf/namespace#articolo"
+            />
+        </unifi:tipo>
+        <unifi:titolo>Una pubblicazione</unifi:titolo>
+      </rdf:Description>
+    </unifi:ha-pubblicazione>
+    <unifi:ha-nome>Mario Rossi</unifi:ha-nome>
+  </rdf:Description>
+</rdf:RDF>
+    \end{xmlblock}
+    Si nota che non pu\`o essere usato il \emph{namespace} per
+    risolvere gli uri degli \emph{elementi nodo}. Nell'esempio
+    il \emph{bnode} non ha nessuna etichetta; nel caso in cui fosse
+    necessario attribuirne una, si usa
+    l'attributo \xml{rdf:nodeID} del \emph{nodo elemento} che
+    rappresenta il \emph{bnode}.
+
+    La sintassi \emph{RDF/XML} prevede numerose funzionalit\`a e
+    scorciatoie, ne enunciamo alcune:
+    \begin{itemize}
+      \item un \emph{elemento nodo} che non ha nessun
+        figlio pu\`o essere inglobato nell'\emph{elemento propriet\`a}
+        padre tramite l'attributo \xml{rdf:resource};
+      \item se un \emph{elemento propriet\`a} ha solo un figlio che
+        \`e un \emph{elemento nodo letterale} allora entrambi possono
+        essere inglobati nell'\emph{elemento nodo} padre, usando il
+        nome dell'\emph{elemento propriet\`a} come nome di attributo e
+        il \emph{letterale} come valore di tale attributo;
+      \item i \emph{bnodes} senza id possono essere omessi usando
+        l'attributo \xml{rdf:parseType="Resource"} che rende
+        l'\emph{elemento propriet\`a} che era padre del \emph{bnode}
+        anche un \emph{elemento nodo} che quindi prende i figli che
+        erano del \emph{bnode}.
+    \end{itemize}
+    
+    Usando tali scorciatoie \`e possibile scrivere il codice in modo pi\`u
+    compatto:
+    \begin{xmlblock}
+<?xml version="1.0"?>
+<rdf:RDF 
+    xmlns:rdf=
+      "http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+    xmlns:unifi=
+      "http://www.unifi.it/rdf/namespace#">
+  <rdf:Description 
+      rdf:about=
+        "http://www.unifi.it/rdf/prof#mario-rossi"
+      unifi:titolo="Una pubblicazione">
+    <unifi:ha-pubblicazione rdf:parseType="Resource">
+      <unifi:tipo 
+        rdf:resource=
+          "http://www.unifi.it/rdf/namespace#articolo"
+        />
+    </unifi:ha-pubblicazione>
+    <unifi:ha-nome>Mario Rossi</unifi:ha-nome>
+  </rdf:Description>
+</rdf:RDF>
+    \end{xmlblock}
+
+    Per ulteriori informazioni sulla sintassi si rimanda al link:\\
+    \link{http://www.w3.org/TR/rdf-syntax-grammar/}.
+
+\subsection{Reificazione}\label{sec:reificazione}
+La \emph{reificazione} nasce dalla impossibilit\`a di esprimere certi
+concetti con il sistema di triple visto precedentemente, ad esempio,
+\`e semplice modellizzare il concetto: <<Mario Rossi ha pubblicato
+``Una pubblicazione''>>, ma asserire che <<Paolo Verdi ha fatto da
+relatore a tale pubblicazione>> \`e pi\`u complesso. Il problema \`e
+che sarebbe necessario poter fare delle \emph{asserzioni} sopra
+un'altra \emph{asserzione}, la \emph{reificazione} implementa proprio
+questa possibilit\`a. 
+
+L'\emph{RDF} mette a disposizione un vocabolario
+per implementare la \emph{reificazione}.
+\begin{triples}[Tripla di esempio][tab:reifi1]
+  \triple{prof:mario-rossi}{unifi:pubblica}{``Una Pubblicazione''}
+\end{triples}
+\begin{triples}[Esempio di reificazione][tab:reifi2]
+  \triple{pubb:pubb123}{rdf:type}{rdf:Statement}
+  \triple{pubb:pubb123}{rdf:subject}{prof:mario-rossi}
+  \triple{pubb:pubb123}{rdf:predicate}{unifi:pubblica}
+  \triple{pubb:pubb123}{rdf:object}{``Una Pubblicazione''}
+\end{triples}
+\begin{triples}[Esempio di asserzione su una asserzione][tab:reifi3]
+  \triple{prof:paolo-verdi}{unifi:relatore}{pubb:pubb123}
+\end{triples}
+\`E possibile vedere nella tabella \ref{tab:reifi1} un esempio di una tripla
+da \emph{reificare}, in \ref{tab:reifi2} la stessa tripla
+\emph{reificata} con l'\emph{uri} \xml{pubb:pubb123}, e in
+\ref{tab:reifi3} un esempio di come un'altra tripla si pu\`o riferire
+a questa. 
+
+Gli elementi del vocabolario che servono per
+il procedimento sono:
+\begin{description}
+  \item[rdf:type e rdf:Statement] indicano che il soggetto
+    \xml{pubb:pubb123} \`e di tipo \emph{Statement} quindi che
+    rappresenta una tripla.
+  \item[rdf:subject] indica il \emph{soggetto} della tripla
+    reificata.
+  \item[rdf:predicate] indica il \emph{predicato} della tripla
+    reificata.
+  \item[rdf:object] indica l'\emph{oggetto} della tripla
+    reificata.
+\end{description}
+
+\subsection{Tipi di dato}\label{sec:tipididato}
+Formalmente un \emph{tipo di dato} \`e composto da tre parti:
+\begin{itemize}
+  \item uno spazio lessicale, un set non vuoto di stringhe di caratteri.
+  \item uno spazio di valori, un set non vuoto.
+  \item un mapping dallo \emph{spazio lessicale} allo \emph{spazio di
+    valori}.
+\end{itemize}
+\emph{RDF} supporta un \emph{subset} dei tipi di dato
+definiti in \emph{XML Schema}\footnote{Vedere sezione
+  \ref{sec:xmlschema}.}, inoltre fornisce un singolo tipo di dato:
+\begin{xmlblock}
+rdf:XMLLiteral
+\end{xmlblock}
+definito come\footnote{Vedere \link{http://www.w3.org/TR/rdf-concepts/\#section-XMLLiteral}.}:
+\begin{description}
+  \item[spazio lessicale:] l'insieme delle stringhe che sono XML ben
+    bilanciato, in forma canonica esclusiva\footnote{Vedere
+      \link{http://www.w3.org/TR/xml-exc-c14n/}.}, per il quale
+    l'\emph{embedding} tra uno \emph{start tag} ed un \emph{end tag} porta
+    alla formazione di un documento conforme con i \emph{namespace};
+  \item[spazio di valori:] un set di entit\`a che \`e disgiunto dallo
+    spazio lessicale, disgiunto da ogni spazio di valori di ogni tipo
+    di dato dell'\emph{XML Schema}, disgiunto dal set delle stringhe
+    delle stringhe dei caratteri \emph{unicode} e con una
+    corrispondenza uno ad uno con lo spazio lessicale;
+  \item[mapping:] un mapping uno ad uno tra i due spazi, iniettivo e
+    suriettivo.
+\end{description}
+
+Per una definizione formale dei tipi di dato in \emph{RDF} e per
+sapere qual \`e il subset preciso dei tipi di dato di \emph{XML
+  Schema} si rimanda al link
+\link{http://www.w3.org/TR/rdf-mt/\#DTYPEINTERP}.
+
+\section{RDF Schema (RDFS)}
+L'\emph{RDF Schema} \`e una estensione semantica dell'\emph{RDF}, esso
+fornisce un vocabolario che permette di definire e descrivere classi,
+propriet\`a e altre risorse, in modo simile a come fanno linguaggi ad
+oggetti come il \emph{Java}. Viene usata la notazione
+\xml{prefix:suffix} dove \xml{prefix} \`e uno dei prefissi gi\`a visti
+nella sezione \ref{sec:rdf}:
+\begin{itemize}
+  \item \xml{rdf} = \xml{http://www.w3.org/1999/02/22-rdf-syntax-ns\#};
+  \item \xml{rdfs} = \xml{http://www.w3.org/2000/01/rdf-schema\#}.
+\end{itemize}
+Viene usato anche il namespace \xml{rdf} nonostante si tratti di
+\emph{RDFS} perch\'e, come gi\`a detto precedentemente, non
+esiste una divisione netta tra i livelli che compongono il \emph{web
+  semantico}, queste sono tecnologie nate per gradi e sviluppate l'una
+sull'altra nel tempo. 
+
+Ad esempio \emph{RDF} fornisce gi\`a il supporto
+per i contenitori come \xml{rdf:bag}, nel sistema di classi di \emph{RDFS} quest'ultimo viene
+formalizzato  rendendolo
+sottoclasse di \xml{rdfs:Container}. I
+concetti di classi e sottoclassi in \emph{RDF} verranno spiegati di seguito. La \emph{reificazione} vista prima nella sezione
+\ref{sec:reificazione} viene in questa sezione formalizzata.
+
+Buona parte delle informazioni contenute in questa sezione possono
+essere reperite nella raccomandazione del \emph{W3C} dove \`e
+descritto il vocabolario \emph{RDFS}:
+\link{http://www.w3.org/TR/rdf-schema/}.
+
+Il vocabolario principale dell'\emph{RDFS} pu\`o essere diviso tra:
+\begin{itemize}
+  \item classi;
+  \item propriet\`a.
+\end{itemize}
+Le prime identificano dei gruppi di risorse, le seconde specificano
+relazioni tra il soggetto e l'oggetto. Oltre a questi due vocabolari
+esistono anche altri vocabolari, alcuni estendono e formalizzano
+concetti appartenenti a \emph{RDF}.
+
+\subsection{Classi}
+Le risorse possono essere divise in \emph{classi}, i membri di tali
+classi sono chiamate \emph{istanze}, le classi sono a sua volta delle
+\emph{risorse}.
+
+La propriet\`a \xml{rdf:type} \`e usata per indicare che una
+risorsa \`e una istanza di una classe. L'\emph{insieme
+delle istanze} di una certa classe \`e chiamato \emph{estensione
+  della classe}. una classe ha ovviamente una sola estensione, per\`o
+due classi diverse possono avere la stessa estensione, ossia, a
+differenza di altri linguaggi ad oggetti come il Java, una risorsa
+pu\`o essere istanza di pi\`u classi. Una classe pu\`o essere una
+istanza di se stessa. Il gruppo delle risorse che sono classi \`e a
+sua volta una classe, precisamente la classe \xml{rdfs:Class}.
+
+Si possono definire delle \emph{sottoclassi} tramite la propriet\`a
+\xml{rdfs:subClassOf}: se una classe ``B'' \`e sottoclasse di ``A''
+allora ogni istanza di ``B'' \`e anche una istanza di ``A''. Il
+termine \emph{superclasse} \`e usato come inverso di
+\emph{sottoclasse}: se ``B'' \`e una sottoclasse di ``A'' allora ``A''
+\`e una superclasse di ``B''.
+
+Le classi principali sono:
+\begin{description}
+  \item[rdfs:Resource] \`e la classe di qualsiasi risorsa, tutte le
+    altre classi sono sottoclassi di questa classe.
+
+    \xml{rdfs:Resource} \`e una istanza di \xml{rdfs:Class};
+  \item[rdfs:Class] indica le risorse che sono
+    classi, ossia tutte le istanze di \xml{rdfs:Class} rappresentano delle
+    classi.
+
+    \xml{rdfs:Class} \`e una istanza di \xml{rdfs:Class} e
+    sottoclasse di \xml{rdfs:Resource};
+  \item[rdfs:Literal] \`e la classe dei valori letterali come stringhe
+    e interi, possono essere \emph{tipati} o \emph{plain}. Quelli
+    tipati sono istanze di una classe \emph{datatype}, non esiste la
+    classe di quelli plain.
+    
+    \xml{rdfs:Literal} \`e una istanza di \xml{rdfs:Class} e
+    sottoclasse di \xml{rdfs:Resource};
+  \item[rdfs:Datatype] \`e la classe dei tipi di dato, ogni istanza di
+    \xml{rdfs:Datatype} \emph{\`e una sottoclasse di}
+    \xml{rdfs:Literal},
+
+    \xml{rdfs:Datatype} \`e una istanza e una sottoclasse di
+    \xml{rdfs:Class};
+  \item[rdf:XMLLiteral] \`e la classe dei letterali nella
+    serializzazione \emph{RDF/XML}.
+
+    \xml{rdf:XMLLiteral} \`e una istanza di \xml{rdfs:Datatype} e una
+    sottoclasse di \xml{rdfs:Literal};
+  \item[rdf:Property] \`e la classe delle propriet\`a, tutte le
+    propriet\`a sono istanze di questa.
+
+    \xml{rdf:Property} \`e una istanza di \xml{rdfs:Class}.
+\end{description}
+
+\subsection{Propriet\`a}
+Le \emph{propriet\`a} sono relazioni che legano una \emph{risorsa
+  oggetto} ad una \emph{risorsa soggetto}, di fatto le propriet\`a
+\emph{sono i predicati} delle triple viste nella sezione \ref{sec:rdf}.
+ Ci\`o che implementa l'\emph{RDFS} \`e la possibilit\`a di
+definire \emph{Sottopropriet\`a} tramite la propriet\`a
+\xml{rdfs:subPropertyOf}, e di definire un \emph{dominio} e
+un'\emph{immagine} alla propriet\`a tramite le propriet\`a
+\xml{rdfs:domain} ed \xml{rdfs:range}.
+
+Se una propriet\`a ``B'' \`e
+\emph{sottopropriet\`a} di una propriet\`a ``A'', allora ogni coppia
+di \emph{risorse} che viene posta in relazione da ``B'' \`e anche in
+relazione tramite ``A''. Esiste anche il termine \emph{superpropriet\`a}
+per riferirsi all'opposto di sottopropriet\`a: se ``B'' \`e
+sottopropriet\`a di ``A'', allora ``A'' \`e superpropriet\`a di
+``B''.
+
+Per quanto riguarda il \emph{dominio} e l'\emph{immagine} di una
+propriet\`a, essi
+servono ad indicare tra quali istanze di classi \`e possibile
+applicare tale propriet\`a. Il \emph{dominio} definisce la classe del
+soggetto della propriet\`a, l'\emph{immagine} quella dell'oggetto. La
+terminologia \`e uguale a quella matematica perch\'e
+il loro significato \`e simile a quello delle funzioni: cos\`i
+come una funzione mette in relazione l'insieme dei punti del dominio
+con quelli del codominio, una propriet\`a mette in relazione l'insieme
+delle risorse del dominio con quelle dell'immagine.
+
+Le propriet\`a principali sono:
+\begin{description}
+  \item[rdfs:domain] definisce il dominio di una propriet\`a, la tripla
+    \singletriple{P}{rdfs:domain}{C}
+    indica che \xml{P} \`e una istanza di \xml{rdf:Property}, \xml{C}
+    \`e una istanza di \xml{rdfs:Class} e le risorse denotate dai
+    \emph{soggetti} delle triple il cui \emph{predicato} \`e \xml{P}
+    sono istanze della classe \xml{C}. Se una propriet\`a ha pi\`u domin\^i definiti,
+    allora i \emph{soggetti} delle triple il cui \emph{predicato} \`e
+    \xml{P} sono istanze \emph{di tutte le classi} \xml{C} definite da
+    tali domin\^i.
+
+    \xml{rdfs:domain} \`e una istanza di \xml{rdf:Property}, il
+    dominio di \xml{rdfs:domain} \`e \xml{rdf:Property}, l'immagine
+    di \xml{rdfs:domain} \`e \xml{rdfs:Class};
+  \item[rdfs:range] definisce l'immagine di una propriet\`a, la tripla
+    \singletriple{P}{rdfs:range}{C}
+    indica che \xml{P} \`e una istanza di \xml{rdf:Property}, \xml{C}
+    \`e una istanza di \xml{rdfs:Class} e le risorse denotate dagli
+    \emph{oggetti} delle triple il cui \emph{predicato} \`e \xml{P} sono istanze
+    della classe \xml{C}. Se una propriet\`a ha pi\`u immagini definite,
+    allora gli \emph{oggetti} delle triple il cui \emph{predicato} \`e
+    \xml{P} sono istanze \emph{di tutte le classi} \xml{C} definite da
+    tali immagini.
+
+    \xml{rdfs:range} \`e una istanza di \xml{rdf:Property}, il
+    dominio di \xml{rdfs:range} \`e \xml{rdf:Property}, l'immagine
+    di \xml{rdfs:range} \`e \xml{rdfs:Class};
+  \item[rdf:type] indica che una risorsa \`e una istanza di una certa
+    classe. La tripla
+    \singletriple{R}{rdf:type}{C}
+    indica che \xml{C} \`e una istanza di \xml{rdfs:Class} e che
+    \xml{R} \`e una istanza di \xml{C}.
+
+    Il dominio di \xml{rdf:type} \`e \xml{rdfs:Resource}, l'immagine
+    \`e \xml{rdfs:Class};
+  \item[rdfs:subPropertyOf] indica che una propriet\`a \`e
+    sottopropriet\`a di un'altra. La tripla
+    \singletriple{P1}{rdfs:subPropertyOf}{P2}
+    indica che \xml{P1} e \xml{P2} sono istanze di \xml{rdf:Property}
+    e che se
+    \singletriple{S}{P1}{O}
+    allora vale anche
+    \singletriple{S}{P2}{O}
+
+    \xml{rdfs:subPropertyOf} \`e una istanza di \emph{rdf:Property},
+    il dominio e l'immagine di \xml{rdfs:subPropertyOf} sono
+    \xml{rdf:Property};
+  \item[rdfs:subClassOf] \`e usata per indicare che una classe \`e
+    sottoclasse di un'altra. La tripla
+    \singletriple{C1}{rdfs:subClassOf}{C2}
+    indica che \xml{C1} e \xml{C2} sono istanze di \xml{rdfs:Class} e
+    che se
+    \singletriple{I}{rdf:type}{C1}
+    allora
+    \singletriple{I}{rdf:type}{C2}
+
+    \xml{rdfs:subClassOf} \`e una istanza di \xml{rdf:Property}, il
+    dominio e l'immagine di \xml{rdfs:subClassOf} sono
+    \xml{rdfs:Class};
+  \item[rdfs:label] pu\`o essere usato per fornire una forma leggibile
+    di un nome
+    di una certa risorsa. La tripla
+    \singletriple{R}{rdfs:label}{L}
+    indica che \xml{R} \`e una istanza di \xml{rdfs:Resource} e che
+    \xml{L} \`e una istanza di \xml{rdfs:Literal} che rappresenta una
+    etichetta leggibile per \xml{R}.
+
+    \xml{rdfs:label} \`e una istanza di \xml{rdf:Property}, il dominio
+    \`e \xml{rdfs:Resource}, l'immagine \`e \xml{rdfs:Literal};
+  \item[rdfs:comment] pu\`o essere usato per fornire una descrizione e
+    documentazione
+    in forma leggibile di una certa risorsa. La tripla
+    \singletriple{R}{rdfs:comment}{L}
+    indica che \xml{R} \`e una istanza di \xml{rdfs:Resource} e che
+    \xml{L} \`e una istanza di \xml{rdfs:Literal} che rappresenta una
+    descrizione leggibile per \xml{R}.
+
+    \xml{rdfs:comment} \`e una istanza di \xml{rdf:Property}, il
+    dominio \`e \xml{rdfs:Resource}, l'immagine \`e \xml{rdfs:Literal}.
+\end{description}
+
+\subsection{Altri vocabolari}
+In questa sezione vengono analizzate altre classi e propriet\`a come i
+contenitori e formalizzeremo nella gerarchia dell'\emph{RDFS} concetti
+gi\`a visti in precedenza come la reificazione.
+
+\subsubsection{Contenitori}
+I contenitori sono risorse che rappresentano collezioni, esistono tre
+classi di contenitori: \xml{rdf:Bag}, \xml{rdf:Seq},
+\xml{rdf:Alt}. Sintatticamente e nel modo d'uso non ci sono
+differenze tra le tre classi, la differenza sta nel significato
+semantico che gli utenti danno a tali strutture. Per convenzione
+\xml{rdf:Bag} \`e usata come lista non ordinata,
+\xml{rdf:Seq} come lista ordinata nella quale l'ordine \`e
+significativo e, infine, \xml{rdf:Alt} indica che il processo tipico
+presuppone una scelta di un elemento tra i suoi membri.
+
+Le risorse del vocabolario sono:
+\begin{description}
+  \item[rdfs:Container] \`e la super classe di tutti i contenitori,
+    \xml{rdf:Bag}, \xml{rdf:Seq} e \xml{rdf:Alt};
+  \item[rdfs:member] \`e la super propriet\`a delle propriet\`a di
+    appartenenza di un contenitore.
+
+    \xml{rdfs:member} \`e una istanza di \xml{rdf:Property}. Il
+    dominio e l'immagine di \xml{rdfs:member} sono
+    \xml{rdfs:Resource};
+  \item[rdfs:ContainerMembershipProperty] \`e la classe delle
+    propriet\`a di appartenenza di un contenitore.
+
+    \xml{rdfs:ContainerMembershipProperty} \`e una istanza di
+    \xml{rdfs:Class} e una sottoclasse di \xml{rdf:Property};
+  \item[rdf:\_nnn], dove \xml{nnn} \`e un intero \emph{maggiore di
+    zero} senza zeri in testa, \`e la propriet\`a che indica
+    l'appartenenza di una risorsa ad un contenitore. La tripla
+    \singletriple{C}{rdf:\_nnn}{O}
+    indica che la risorsa \xml{O} \`e membro del contenitore \xml{C}.
+
+    \xml{rdf:\_nnn} \`e una istanza di
+    \xml{rdfs:ContainerMembershipProperty} e una sottopropriet\`a di
+    \xml{rdfs:member}. Notare che, poich\'e il dominio di
+    \xml{rdfs:member} \`e \xml{rdfs:Resource} e non
+    \xml{rdfs:Container}, allora \xml{rdf:\_nnn} pu\`o essere
+    applicata anche a risorse che non sono contenitori;
+  \item[rdf:Bag] \`e la classe dei contenitori non ordinati.
+    L'ordinamento numerico, dato dal numero \xml{nnn} delle propriet\`a
+    di appartenenza \xml{rdf:\_nnn} applicate ad esso, \`e da
+    considerarsi privo di significato.
+
+    \xml{rdf:Bag} \`e una sottoclasse di \xml{rdf:Container};
+  \item[rdf:Seq] \`e la classe dei contenitori ordinati,
+    l'ordinamento numerico, dato dal numero \xml{nnn} delle propriet\`a
+    di appartenenza \xml{rdf:\_nnn} applicate ad esso, \`e da
+    considerarsi significativo.
+
+    \xml{rdf:Seq} \`e una sottoclasse di \xml{rdf:Container};
+  \item[rdf:Alt] \`e la classe dei contenitori che prevedono una
+    selezione tra i suoi membri. Il primo membro, con valore numerico
+    \xml{nnn} minore delle propriet\`a
+    di appartenenza \xml{rdf:\_nnn}, \`e da
+    considerarsi come il valore selezionato di default.
+
+    \xml{rdf:Alt} \`e una sottoclasse di \xml{rdf:Container}.
+\end{description}
+
+\subsubsection{Collezioni}
+Le collezioni sono liste di elementi, anche vuote,
+rappresentate in modo simile a come vengono implementate le liste nei
+linguaggi funzionali. Nella figura \ref{fig:collection} \`e mostrato
+un uso tipico di queste liste.
+\begin{tgraph}[Esempio di utilizzo delle Collection][fig:collection]
+\tgraphuri{base}{0,1}{dip:sisinfo}
+\tgraphuri{primo}{0.25,0.75}{}
+\tgraphuri{primof}{1,0.75}{prof:mario-rossi}
+\tgraphuri{secondo}{0.25,0.5}{}
+\tgraphuri{secondof}{1,0.5}{prof:franco-neri}
+\tgraphuri{terzo}{0.25,0.25}{}
+\tgraphuri{terzof}{1,0.25}{prof:paolo-verdi}
+\tgraphuri{nil}{0.25,0}{rdf:nil}
+\tgrapharcl{base}{primo}{unifi:professori}
+\tgrapharcl{primo}{primof}{rdf:first}
+\tgrapharcl{primo}{secondo}{rdf:rest}
+\tgrapharcl{secondo}{secondof}{rdf:first}
+\tgrapharcl{secondo}{terzo}{rdf:rest}
+\tgrapharcl{terzo}{terzof}{rdf:first}
+\tgrapharcl{terzo}{nil}{rdf:rest}
+\end{tgraph}
+
+Ogni \emph{bnode} \`e istanza di \xml{rdf:List} cos\`i come
+\xml{rdf:nil} che rappresenta una lista vuota. \xml{rdf:firs} indica
+il primo elemento della lista in questione, \xml{rdf:rest} il resto
+della lista senza il primo elemento.
+
+Nel dettaglio il vocabolario \`e composto da:
+\begin{description}
+  \item[rdf:List] \`e la classe delle liste, le sue istanze
+    rappresentano liste.
+
+    \xml{rdf:List} \`e una istanza di \xml{rdfs:Class};
+  \item[rdf:first] indica il primo elemento di una lista. La tripla:
+    \singletriple{L}{rdf:first}{O}
+    indica che \xml{L} \`e una istanza di \xml{rdf:List}, \xml{O} una
+    istanza di \xml{rdfs:Resource} e che \xml{O} \`e il primo
+    elemento della lista \xml{L}.
+
+    \xml{rdf:first} \`e una istanza di \xml{rdf:Property}, il suo
+    dominio \`e \xml{rdf:List} e la sua immagine \xml{rdfs:Resource};
+  \item[rdf:rest] indica gli elementi di una lista escluso il
+    primo. La tripla:
+    \singletriple{L}{rdf:rest}{O}
+    indica che \xml{L} \`e una istanza di \xml{rdf:List}, \xml{O} una
+    istanza di \xml{rdfs:List} e che \xml{O} \`e una lista uguale ad
+    \xml{L} togliendo il primo elemento.
+
+    \xml{rdf:rest} \`e una istanza di \xml{rdf:Property}, il suo
+    dominio \`e \xml{rdf:List} e la sua immagine \xml{rdfs:List};
+  \item[rdf:nil] indica una lista vuota.
+
+    \xml{rdf:nil} \`e una istanza di \xml{rdf:List}.
+\end{description}
+
+\subsubsection{Reificazione}
+Nella sezione \ref{sec:reificazione} \`e gi\`a stato introdotto il concetto
+di reificazione e la sua implementazione. \`E gia state descritte la classe
+\xml{rdf:Statement} e le propriet\`a \xml{rdf:subject},
+\xml{rdf:predicate} e \xml{rdf:object}; ma non erano ancora noti i
+concetti di \emph{classe} e \emph{propriet\`a}. 
+
+Viene descritto come formalizzare tali classe e propriet\`a in
+\emph{RDFS}:
+\begin{description}
+  \item[rdf:Statement] \`e la classe delle sentenze, le sue istanze
+    rappresentano delle triple, ognuna con un soggetto indicato da
+    \xml{rdf:subject}, un predicato indicato da \xml{rdf:predicate} e
+    un oggetto indicato da \xml{rdf:object}.
+
+    \xml{rdf:Statement} \`e una istanza di \xml{rdfs:Class};
+  \item[rdf:subject] \`e la propriet\`a che indica il soggetto di una
+    tripla (una istanza di \xml{rdf:Sentence}). La tripla:
+    \singletriple{S}{rdf:subject}{R}
+    indica che \xml{S} \`e una istanza di \xml{rdf:Sentence}, \xml{R}
+    di \xml{rdfs:Resource} e che \xml{R} \`e il soggetto di \xml{S}.
+
+    \xml{rdf:subject} \`e una istanza di \xml{xml:Property}, il suo
+    dominio \`e \xml{rdf:Statement}, l'immagine \xml{rdf:Resource};
+  \item[rdf:predicate] \`e la propriet\`a che indica il predicato di una
+    tripla (una istanza di \xml{rdf:Sentence}). La tripla:
+    \singletriple{S}{rdf:predicate}{R}
+    indica che \xml{S} \`e una istanza di \xml{rdf:Sentence}, \xml{R}
+    di \xml{rdfs:Resource} e che \xml{R} \`e il predicato di \xml{S}.
+
+    \xml{rdf:predicate} \`e una istanza di \xml{xml:Property}, il suo
+    dominio \`e \xml{rdf:Statement}, l'immagine \xml{rdf:Resource};
+  \item[rdf:object] \`e la propriet\`a che indica l'oggetto di una
+    tripla (una istanza di \xml{rdf:Sentence}). La tripla:
+    \singletriple{S}{rdf:object}{R}
+    indica che \xml{S} \`e una istanza di \xml{rdf:Sentence}, \xml{R}
+    di \xml{rdfs:Resource} e che \xml{R} \`e l'oggetto di \xml{S}.
+
+    \xml{rdf:object} \`e una istanza di \xml{xml:Property}, il suo
+    dominio \`e \xml{rdf:Statement}, l'immagine \xml{rdf:Resource}.
+\end{description}
+
+\subsubsection{Propriet\`a di utility}
+Le seguenti tre propriet\`a sono definite per fornire pi\`u
+informazioni riguardo una risorsa:
+\begin{description}
+  \item[rdfs:seeAlso] serve per indicare una risorsa che fornisce
+    ulteriori informazioni su un'altra risorsa. La tripla:
+    \singletriple{S}{rdfs:seeAlso}{O}
+    indica che \xml{S} e \xml{O} sono istanze di \xml{rdfs:Resource}
+    e che \xml{O} pu\`o fornire informazioni addizionali su \xml{S}.
+
+    \xml{rdfs:seeAlso} \`e una istanza di \xml{rdf:Property}, il suo
+    dominio \`e \xml{rdfs:Resource}, la sua immagine \xml{rdfs:Resource};
+  \item[rdfs:isDefinedBy] serve per indicare una risorsa che definisce
+    un'altra risorsa. La tripla:
+    \singletriple{S}{rdfs:isDefinedBy}{O}
+    indica che \xml{S} e \xml{O} sono istanze di \xml{rdfs:Resource}
+    e che \xml{O} definisce \xml{S}.
+
+    \xml{rdfs:isDefinedBy} \`e una istanza di \xml{rdf:Property}, il suo
+    dominio \`e \xml{rdfs:Resource}, la sua immagine \xml{rdfs:Resource};
+  \item[rdf:value] non ha un significato formale, ma di solito viene
+    usata per fornire il valore principale di un dato strutturato. La
+    tripla: 
+    \singletriple{S}{rdf:value}{O}
+    indica che \xml{S} e \xml{O} sono istanze di \xml{rdfs:Resource}
+    e che \xml{O} \`e il valore principale di \xml{S}.
+
+    \xml{rdf:value} \`e una istanza di \xml{rdf:Property}, il suo
+    dominio \`e \xml{rdfs:Resource}, la sua immagine \xml{rdfs:Resource}.
+\end{description}
+
+\section{Web Ontology Language (OWL)}
+\emph{Web Ontology Language} estende \emph{RDFS} fornendo un
+vocabolario addizionale per descrivere altre propriet\`a e classi. Le
+strutture descritte con \emph{OWL} prendono il nome di
+\emph{ontologie}. \emph{OWL} fornisce un suo \emph{namespace}:
+\link{http://www.w3.org/2002/07/owl\#}, e solitamente viene usato il
+prefisso \xml{owl}.
+
+Le ontologie includono descrizioni di classi, di propriet\`a e le loro
+istanze. La principale potenzialit\`a nel descrivere ontologie
+rispetto a schemi \emph{RDFS} sta nel fatto che le ontologie sono
+strutture logiche dalle quali \`e possibile estrarre conoscenza. Il
+mezzo con cui viene estratta questa conoscenza da un ontologia \`e il
+\emph{reasoner} che \`e un programma che fornisce supporto
+generico applicabile ad ogni ontologia \emph{OWL}.
+
+ \emph{OWL} \`e
+composto da tre sottolinguaggi con livelli di espressivit\`a logica
+crescenti:
+\begin{enumerate}
+\item \emph{OWL Lite} fornisce supporto alle necessit\`a di una
+  classificazione gerarchica con vincoli semplici;
+\item \emph{OWL DL} fornisce la massima espressivit\`a senza perdita
+  di computabilit\`a e decidibilit\`a dei \emph{reasoning};
+\item \emph{OWL Full} fornisce la massima espressivit\`a senza
+  garanzie computazionali.
+\end{enumerate}
+\emph{OWL Full} implementa una logica del primo ordine, mentre gli
+altri due implementano delle logiche descrittive pi\`u restrittive.
+
+Una analisi avanzata di \emph{OWL} va oltre gli scopi di questo testo,
+per uno studio approfondito si rimanda a \cite{owl}.
+
+\section{Simple Knowledge Organization System (SKOS)}\label{sec:skos}
+\emph{SKOS} \`e un vocabolario \emph{RDF} che permette la descrizione
+di semplici sistemi di organizzazione della conoscenza come tesauri,
+tassonomie e schemi di classificazione. Rappresenta un anello tra i
+linguaggi formali, come \emph{OWL}, e le attuali implementazioni
+informali delle applicazioni web.
+
+L'elemento fondamentale del vocabolario \`e il \emph{concept},
+\emph{SKOS} mette a disposizione la classe \xml{skos:Concept} per
+indicare che una certa risorsa \`e un \emph{concept}. Con la tripla
+\singletriple{ex:esempioConcept}{rdf:type}{skos:Concept}
+si indica che \xml{ex:esemioConcept} \`e un \emph{concept}.
+
+\xml{skos:prefLabel}, \xml{skos:altLabel}, \xml{skos:hiddenLabel}
+servono per indicare l'espressione in linguaggio naturale con cui ci
+si riferisce ad un \emph{concept}, sono tutte sottopropriet\`a di
+\xml{rdfs:label}. \xml{skos:prefLabel} indica l'etichetta principale,
+mentre con \xml{skos:altLabel} \`e possibile definire sinonimi. Con
+\xml{skos:hiddenLabel} \`e possibile indicare etichette che non devono
+essere visibili.
+
+\subsection{Relazioni semantiche}
+Con \emph{SKOS} \`e possibile definire le seguenti relazioni
+semantiche tra \emph{concept}:
+\begin{itemize}
+\item \xml{skos:broader} e \xml{skos:narrower} definiscono relazioni
+  gerarchiche nelle quali un \emph{concept} \`e una specificazione di
+  un altro, oppure una sua parte. \xml{skos:broader} e
+  \xml{skos:narrower} sono una l'inversa dell'altra;
+\item \xml{skos:relate} indica che vi \`e una associazione non
+  gerarchica tra due \emph{concept}.
+\end{itemize}
+La figura \ref{fig:esempioNarrower} indica il modo di utilizzo di
+\xml{skos:narrower} e \xml{skos:broader}, nell'esempio
+\xml{animali:gatto} \`e una specializzazione di
+\xml{animali:mammifero}.
+\begin{tgraph}[Esempio di utilizzo di \xml{skos:narrower} e \xml{skos:broader}.][fig:esempioNarrower]
+  \tgraphuri{n1}{0,0}{animali:mammifero}
+  \tgraphuri{n2}{1,0}{animali:gatto}
+  \tgrapharcl{n1}{n2}{skos:narrower}
+  \tgrapharcl{n2}{n1}{skos:broader}
+\end{tgraph}
+
+\subsection{Note}
+\emph{SKOS} fornisce la propriet\`a \xml{skos:note} e le sue
+specializzazioni per indicare descrizioni e documentazioni testuali di un
+\emph{concept}. \xml{skos:note} \`e per una documentazione generica,
+le sue specializzazioni sono:
+\begin{itemize}
+\item \xml{skos:scopeNote} per indicazioni su l'uso di un concept e
+  sui suoi limiti;
+\item \xml{skos:definition} per una spiegazione competa del
+  significato di un \emph{concept};
+\item \xml{skos:example} per fornire esempi sull'uso di un
+  \emph{concept};
+\item \xml{skos:historyNote} per descrivere cambi sostanziali nel
+  significato e nella forma di un \emph{concept};
+\item \xml{skos:editorialNote} per fornire informazioni indirizzate
+  all'amministrazione, come indicazioni sul lavoro ancora da fare;
+\item \xml{skos:changeNote} per documentare i cambiamenti di un
+  \emph{concept} a scopo amministrativo.
+\end{itemize}
+
+\subsection{\emph{Concept} schema}
+I \emph{concept} possono essere usati come entit\`a a se stanti,
+oppure possono essere organizzati in vocabolari chiamati schemi, \emph{SKOS} fornisce
+la possibilit\`a di rappresentare questi schemi con la classe
+\xml{skos:ConceptScheme}. Per indicare che un \emph{concept}
+appartiene ad un certo schema si usa la propriet\`a
+\xml{skos:inScheme}. Per indicare i punti di accesso ad una gerarchia
+di uno schema definita con \xml{skos:narrower} e \xml{skos:broader},
+si usa la propriet\`a di un \xml{skos:ConceptScheme}:
+\xml{skos:hasTopConcept}.
+
+In pratica con \xml{skos:narrower} e \xml{skos:broader} si definiscono
+alberi di \emph{concept}, le radici di questi alberi possono essere
+associate ad uno schema con \xml{skos:hasTopConcept}.
+
+\subsection{Mappare \emph{concept} schema}
+\`E possibile creare relazioni tra schemi diversi usando le
+propriet\`a dei \emph{concept}:
+\begin{itemize}
+\item \xml{skos:exactMatch};
+\item \xml{skos:closeMatch}.
+\end{itemize}
+Entrambe possono essere usate per indicare che due \emph{concept}
+appartenenti a schemi diversi hanno lo stesso significato. La
+differenza tra i due \`e che \xml{skos:exactMatch} \`e transitivo,
+\xml{skos:closeMatch} no.
+
+Due \emph{concept} di due schemi diversi possono essere anche mappati
+con le propriet\`a parallele a quelle per le relazioni semantiche:
+\begin{itemize}
+\item \xml{skos:broadMatch};
+\item \xml{skos:narrowMatch};
+\item \xml{skos:relatedMatch}.
+\end{itemize}
+
+\subsection{Collezioni di \emph{concept}}
+I \emph{concept} possono essere organizzati in collezioni che possono
+essere ordinate o no. Queste collezioni vengono indicate con le
+classi:
+\begin{itemize}
+\item \xml{skos:Collection} indica una collezione non ordinata, i
+  \emph{concept} membri vengono indicati con la propriet\`a
+  \xml{skos:member};
+\item \xml{skos:OrderedCollection} indica una collezione non ordinata, i
+  \emph{concept} membri vengono indicati con la propriet\`a
+  \xml{skos:memberList};
+\end{itemize}
+
+\section{\emph{Friend Of A Friend} (\emph{FOAF})}
+\emph{FOAF} consiste in un vocabolario per definire una rete sociale
+tramite \emph{RDF}, \emph{RDFS} e \emph{OWL}. Con \emph{FOAF} \`e possibile descrivere persone e
+relazioni tra di esse. \emph{FOAF} usa il \emph{namespace}
+\link{http://xmlns.com/foaf/0.1/} a cui solitamente viene associato il
+prefisso \xml{foaf:}.
+
+In questo testo vengono analizzate solo le classi e le propriet\`a
+stabili delle specifiche, per un elenco completo riferirsi a
+\cite{foaf}.
+
+\emph{FOAF} fornisce le seguenti classi:
+\begin{itemize}
+\item \xml{foaf:Agent} \`e la superclasse di tutti gli agenti che
+  possono essere gruppi, persone o organizzazioni;
+\item \xml{foaf:Group} rappresenta una collezione di agenti, ed \`e a
+  sua volta un agente, i suoi membri sono definiti con la propriet\`a
+  \xml{foaf:member}, \`e una sottoclasse di \xml{foaf:Agent};
+\item \xml{foaf:Organization} rappresenta un agente corrispondente ad
+  una organizzazione, impresa, etc\dots, \`e una sottoclasse di \xml{foaf:Agent};
+\item \xml{foaf:Person} rappresenta una persona, \`e una sottoclasse
+  di \xml{foaf:Agent};
+\item \xml{foaf:Document} rappresenta un documento che pu\`o essere
+  sia elettronico che fisico.
+\end{itemize}
+
+\emph{FOAF} fornisce le seguenti propriet\`a:
+\begin{itemize}
+\item \xml{foaf:homepage} indica la pagina web di qualcosa, una certa
+  pagina pu\`o essere associata sono ad una risorsa, il dominio \`e
+  \xml{owl:Thing}, l'immagine \xml{foaf:Document};
+\item \xml{foaf:isPrimaryTopicOf} mette in relazione qualcosa con un
+  documento che tratta principalmente di questa, \`e l'inversa di
+  \xml{foaf:primaryTopic}, il dominio \`e
+  \xml{owl:Thing}, l'immagine \xml{foaf:Document};
+\item \xml{foaf:primaryTopic} mette in relazione un documento con
+  qualcosa che \`e il suo argomento principale, \`e l'inversa di
+  \xml{foaf:isPrimaryTopicOf}, il dominio \`e
+  \xml{foaf:Document}, l'immagine \xml{owl:Thing};
+\item \xml{foaf:knows} mette in relazione una persona con un'altra che egli
+  conosce, il dominio \`e \xml{foaf:Person}, l'immagine
+  \xml{foaf:Person};
+\item \xml{foaf:made} mette in relazione un agente con qualcosa
+  fatta da questa, \`e l'inversa di \xml{foaf:maker}, il dominio \`e
+  \xml{foaf:Agent}, l'immagine \xml{owl:Thing};
+\item \xml{foaf:maker} mette in relazione una cosa con l'agente che
+  l'ha fatta, \`e l'inversa di \xml{foaf:made}, il dominio \`e
+  \xml{owl:Thing}, l'immagine \xml{foaf:Agent};
+\item \xml{foaf:mbox} mette in relazione un agente con la sua casella
+  di posta, solitamente identificata con lo schema \emph{URI}
+  \xml{mailto:}, il dominio \`e
+  \xml{foaf:Agent}, l'immagine \xml{owl:Thing};
+\item \xml{foaf:member} indica il membro di un gruppo, il dominio \`e
+  \xml{foaf:Group}, l'immagine \xml{foaf:Agent};
+\end{itemize}
+\end{document}
